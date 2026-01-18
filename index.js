@@ -1,6 +1,6 @@
 const WebSocket = require("ws");
 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 10000;
 const server = new WebSocket.Server({ port });
 
 console.log("WebSocket server running on port", port);
@@ -23,6 +23,8 @@ server.on("connection", socket => {
             monikerSet = true;
             console.log(`Client set moniker: ${msg}`);
             socket.send(`Welcome, ${msg}!`);
+            console.log("WebSocket server running on port", port);
+
             return;
         }
 

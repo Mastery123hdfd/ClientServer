@@ -13,6 +13,7 @@ server.on("connection", socket => {
 
     // First message from a client will be their moniker
     let monikerSet = false;
+    socket.send('Please input your moniker');
 
     socket.on("message", msg => {
         msg = msg.toString();

@@ -8,6 +8,8 @@ console.log("WebSocket server running on port", port);
 // Store monikers for each client
 const clients = new Map();
 
+const history = new Array(100);
+
 server.on("connection", socket => {
     console.log("Client connected");
 
@@ -19,18 +21,22 @@ server.on("connection", socket => {
         msg = msg.toString();
 
         // If moniker not set, treat first message as moniker
-        if (!monikerSet) {
+        if (!monikerSet || msg == "/changemoniker") {
             clients.set(socket, msg);
             monikerSet = true;
             console.log(`Client set moniker: ${msg}`);
             socket.send(`Welcome, ${msg}!`);
+            console.log("Getting History...");
+            for(const n of history){
+                socket.send(history[n]);
+            }
             console.log("WebSocket server running on port", port);
 
             return;
         }
 
         // Get the client's moniker
-        const moniker = clients.get(socket) || "Unknown";
+        const moniker = clients.get(socket) || "UNKNOWN";
 
         // Build message with moniker prefix
         const taggedMessage = `${moniker}: ${msg}`;
@@ -39,6 +45,7 @@ server.on("connection", socket => {
         // Broadcast to all connected clients
         for (const [client] of clients) {
             if (client.readyState === WebSocket.OPEN) {
+                history.push(taggedMessage);
                 client.send(taggedMessage);
             }
         }

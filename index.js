@@ -27,7 +27,6 @@ server.on("connection", socket => {
 
             socket.send(`Welcome, ${msg}!`);
 
-            // Send chat history
             for (const line of history) {
                 socket.send(line);
             }

@@ -40,9 +40,11 @@ server.on("connection", socket => {
         console.log("Broadcast:", taggedMessage);
 
         // Add to history (max 100)
-        history.push(taggedMessage);
-        if (history.length > 100) history.shift();
-
+        
+        if (history.length > 100) {
+            history.push(taggedMessage);
+            history.shift();
+        }
         // Broadcast to all clients
         for (const [client] of clients) {
             if (client.readyState === WebSocket.OPEN) {

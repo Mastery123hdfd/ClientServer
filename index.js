@@ -113,6 +113,7 @@ server.on("connection", socket => {
             const usersocket = clients.get(socket);
             if(usersocket.mod || usersocket.admin){
                 command = true;
+                socket.send("Command Mode Activated");
                 return;
             }
             else{
@@ -134,7 +135,7 @@ server.on("connection", socket => {
                 taggedMessage = "Admin has cleared the chat";
                 taggedMessage = (JSON.stringify({type: "clearHistory"}));
 
-            } else{
+            } else if(usersocket.mod && !usersocket.admin){
                 socket.send("Moderators cannot use this command.");
             }
             if(msg =="/cmd"){

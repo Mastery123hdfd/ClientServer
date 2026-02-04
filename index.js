@@ -128,6 +128,7 @@ server.on("connection", socket => {
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
                 history.pop();
+                socket.send("Message Removed");
                 taggedMessage =(JSON.stringify({type:"strikemsg"}));
                 return;
             }
@@ -140,6 +141,7 @@ server.on("connection", socket => {
                 socket.send("Moderators cannot use this command.");
             }
             if(msg =="/cmd"){
+                socket.send("Command Mode Deactivated");
                 command = false;
             }
         }

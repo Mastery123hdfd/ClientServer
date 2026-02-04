@@ -128,12 +128,13 @@ server.on("connection", socket => {
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
                 history.pop();
+                taggedMessage =(JSON.stringify({type:"strikemsg"}));
                 return;
             }
             if(msg == "/clearhist" && usersocket.admin){
                 history.length = 0;
-                taggedMessage = "Admin has cleared the chat";
                 taggedMessage = (JSON.stringify({type: "clearHistory"}));
+                taggedMessage = "Admin has cleared the chat";
 
             } else if(usersocket.mod && !usersocket.admin){
                 socket.send("Moderators cannot use this command.");

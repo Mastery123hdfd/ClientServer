@@ -15,6 +15,7 @@ server.on("connection", socket => {
     console.log("Client connected");
 
     let monikerSet = false;
+    let firstmessage = true;
     socket.send("Please input your moniker");
 
     socket.on("message", msg => {
@@ -26,11 +27,12 @@ server.on("connection", socket => {
             monikerSet = true;
 
             socket.send(`Welcome, ${msg}!`);
-
-            for (const line of history) {
-                socket.send(line);
+            if(firstmessage){
+                for (const line of history) {
+                    socket.send(line);
+               }
+               firstmessage = false;
             }
-
             return;
         }
         if(msg == "/changename" || msg == "/changemoniker"){

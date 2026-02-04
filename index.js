@@ -21,7 +21,7 @@ server.on("connection", socket => {
         msg = msg.toString();
 
         // First message = moniker
-        if (!monikerSet || msg === "/changemoniker") {
+        if (!monikerSet) {
             clients.set(socket, msg);
             monikerSet = true;
 
@@ -33,17 +33,21 @@ server.on("connection", socket => {
 
             return;
         }
+        if(msg == "/changename" || msg == "/changemoniker"){
+            monikerSet = false;
+            socket.send("Please input your new username");   
+        }
 
         const moniker = clients.get(socket) || "UNKNOWN";
         const taggedMessage = `${moniker}: ${msg}`;
 
         console.log("Broadcast:", taggedMessage);
 
-        // Add to history (max 100)
+        // Add to history (max 200)
         
-        if (history.length > 100) {
-            history.push(taggedMessage);
+        if (history.length > 200) {
             history.shift();
+            history.push(taggedMessage);
         }
         // Broadcast to all clients
         for (const [client] of clients) {

@@ -100,8 +100,9 @@ server.on("connection", socket => {
                 return;
             }else{
                 socket.send("Invalid Login Info");
-                return;
             }
+            loginmsg = false;
+            return;
         }
         if(msg == "/login"){
             socket.send("Please input your login Username");

@@ -36,6 +36,7 @@ server.on("connection", socket => {
         if(msg == "/changename" || msg == "/changemoniker"){
             monikerSet = false;
             socket.send("Please input your new username");   
+            return;
         }
 
         const moniker = clients.get(socket) || "UNKNOWN";
@@ -45,9 +46,9 @@ server.on("connection", socket => {
 
         // Add to history (max 200)
         
+        history.push(taggedMessage);
         if (history.length > 200) {
             history.shift();
-            history.push(taggedMessage);
         }
         // Broadcast to all clients
         for (const [client] of clients) {

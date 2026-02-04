@@ -93,6 +93,7 @@ server.on("connection", socket => {
         }
         if(loginmsg){
             loginstring = msg;
+            socket.send("Received login user");
             if(loginstring in loginfo){
                 passmsg = true;
                 loginmsg = false;
@@ -130,6 +131,10 @@ server.on("connection", socket => {
             if(msg == "/clearhist" && usersocket.admin){
                 history.length = 0;
                 taggedMessage = "Admin has cleared the chat";
+                taggedMessage = (JSON.stringify({type: "clearHistory"}));
+
+            } else{
+                socket.send("Moderators cannot use this command.");
             }
             if(msg =="/cmd"){
                 command = false;
@@ -143,7 +148,7 @@ server.on("connection", socket => {
         // Add to history (max 200)
         
         history.push(taggedMessage);
-        if (history.length > 200) {
+        if (history.length > 200 && taggedMessage != (JSON.stringify({type: "clearHistory"}))) {
             history.shift();
         }
         // Broadcast to all clients

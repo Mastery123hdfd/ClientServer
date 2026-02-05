@@ -55,6 +55,8 @@ server.on("connection", socket => {
             }
             return;
         }
+        const now = new Date();
+        const timestamp = now.toLocaleTimeString("en-US", { hour12: true });
         if(msg == "/changename" || msg == "/changemoniker"){
             monikerSet = false;
             socket.send("Please input your new username");   
@@ -145,8 +147,7 @@ server.on("connection", socket => {
             }
         }
 
-        const now = new Date();
-        const timestamp = now.toLocaleTimeString("en-US", { hour12: true });
+        
 
         console.log("Broadcast:", taggedMessage);
 

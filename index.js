@@ -125,13 +125,17 @@ server.on("connection", socket => {
         }
         const user = clients.get(socket);
         const moniker = user.moniker;
-        let taggedMessage = `(${timestamp}) | ${moniker}: ${msg}`;
+        let taggedMessage = "";
         if(socket.mod){
             taggedMessage = `(${timestamp}) | [MOD] ${moniker}: ${msg}`;
         }
         if(socket.admin){
             taggedMessage = `(${timestamp}) | [ADMIN] ${moniker}: ${msg}`;
         }
+        if(!socket.admin && !socket.mod){
+            taggedMessage= `(${timestamp}) | ${moniker}: ${msg}`;
+        }
+
         if(command){
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){

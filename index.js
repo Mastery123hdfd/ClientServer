@@ -136,8 +136,8 @@ server.on("connection", socket => {
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
                 history.pop();
-                socket.send("Message Removed");
                 taggedMessage = (JSON.stringify({type:"strikemsg"}));
+                socket.send("Message Removed");
             }
             if(msg == "/clearhist" && usersocket.admin){
                 history.length = 0;

@@ -36,7 +36,7 @@ server.on("connection", socket => {
 
     socket.on("message", msg => {
         msg = msg.toString();
-
+        const userclient = socket;
         // First message = moniker
         if (!monikerSet) {
             clients.set(socket, {
@@ -126,13 +126,13 @@ server.on("connection", socket => {
         const user = clients.get(socket);
         const moniker = user.moniker;
         let taggedMessage = "";
-        if(socket.mod){
+        if(user.mod){
             taggedMessage = `(${timestamp}) | [MOD] ${moniker}: ${msg}`;
         }
-        if(socket.admin){
+        if(user.admin){
             taggedMessage = `(${timestamp}) | [ADMIN] ${moniker}: ${msg}`;
         }
-        if(!socket.admin && !socket.mod){
+        if(!user.admin && !user.mod){
             taggedMessage= `(${timestamp}) | ${moniker}: ${msg}`;
         }
 
@@ -141,19 +141,19 @@ server.on("connection", socket => {
             if(msg == "/strikemsg"){
                 history.pop();
                 taggedMessage = (JSON.stringify({type:"strikemsg"}));
-                socket.send("Message Removed");
             }
             if(msg == "/clearhist" && usersocket.admin){
                 history.length = 0;
                 taggedMessage = (JSON.stringify({type: "clearHistory"}));
-                taggedMessage = "Admin has cleared the chat";
 
             } else if(usersocket.mod && !usersocket.admin){
                 socket.send("Moderators cannot use this command.");
+                return;
             }
             if(msg =="/cmdoff"){
                 socket.send("Command Mode Deactivated");
                 command = false;
+                return;
             }
         }
 
@@ -164,7 +164,7 @@ server.on("connection", socket => {
         // Add to history (max 200)
         
         history.push(taggedMessage);
-        if (history.length > 200 && taggedMessage != (JSON.stringify({type: "clearHistory"})) && (JSON.stringify({type: "strikemsg"}))) {
+        if (history.length > 200 && taggedMessage != JSON.stringify({type: "clearHistory"}) && JSON.stringify({type: "strikemsg"})) {
             history.shift();
         }
         // Broadcast to all clients

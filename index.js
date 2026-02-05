@@ -123,14 +123,13 @@ server.on("connection", socket => {
         }
         const user = clients.get(socket);
         const moniker = user.moniker;
-        let taggedMessage = `${moniker}: ${msg}`;
+        let taggedMessage = `(${timestamp}) | ${moniker}: ${msg}`;
         if(command){
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
                 history.pop();
                 socket.send("Message Removed");
-                taggedMessage =(JSON.stringify({type:"strikemsg"}));
-                return;
+                taggedMessage = (JSON.stringify({type:"strikemsg"}));
             }
             if(msg == "/clearhist" && usersocket.admin){
                 history.length = 0;
@@ -146,14 +145,15 @@ server.on("connection", socket => {
             }
         }
 
-        
+        const now = new Date();
+        const timestamp = now.toLocaleTimeString("en-US", { hour12: true });
 
         console.log("Broadcast:", taggedMessage);
 
         // Add to history (max 200)
         
         history.push(taggedMessage);
-        if (history.length > 200 && taggedMessage != (JSON.stringify({type: "clearHistory"}))) {
+        if (history.length > 200 && taggedMessage != (JSON.stringify({type: "clearHistory"})) && (JSON.stringify({type: "strikemsg"}))) {
             history.shift();
         }
         // Broadcast to all clients

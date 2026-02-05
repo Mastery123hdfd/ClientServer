@@ -140,7 +140,7 @@ server.on("connection", socket => {
             } else if(usersocket.mod && !usersocket.admin){
                 socket.send("Moderators cannot use this command.");
             }
-            if(msg =="/cmd"){
+            if(msg =="/cmdoff"){
                 socket.send("Command Mode Deactivated");
                 command = false;
             }

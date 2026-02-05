@@ -12,6 +12,8 @@ const clients = new Map();
 
 // Proper history buffer
 const history = [];
+
+
 const loginfo = {};
 
 loginfo["mhwenAdminLoginMJC"] = "1142";
@@ -21,6 +23,15 @@ loginfo["modOliverLimb20213"] = "30412";
 const testPass = "101";
 const adminPass = "1142";
 const modAdminPassArray = ["30412"];
+
+const admin = require("firebase-admin");
+
+admin.initializeApp({
+  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+  databaseURL: process.env.FIREBASE_DB_URL
+});
+
+const db = admin.database();
 
 server.on("connection", socket => {
     console.log("Client connected");
@@ -135,16 +146,26 @@ server.on("connection", socket => {
         if(!user.admin && !user.mod){
             taggedMessage= `(${timestamp}) | ${moniker}: ${msg}`;
         }
-
+        db.ref("chatlog").once("value", snapshot=>{
+            snapshot.forEach(child =>{
+                const entry = child.val();
+                history.push(entry.taggedMessage);
+            })
+        })
         if(command){
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
                 history.pop();
                 taggedMessage = (JSON.stringify({type:"strikemsg"}));
+                db.ref("chatlog").limitToLast(1).once("value", snapshot => {
+                    snapshot.forEach(child => child.ref.remove());
+                });
+
             }
             if(msg == "/clearhist" && usersocket.admin){
                 history.length = 0;
                 taggedMessage = (JSON.stringify({type: "clearHistory"}));
+                db.ref("chatlog").remove();
 
             } else if(usersocket.mod && !usersocket.admin){
                 socket.send("Moderators cannot use this command.");
@@ -167,6 +188,7 @@ server.on("connection", socket => {
         if (history.length > 200 && taggedMessage != JSON.stringify({type: "clearHistory"}) && JSON.stringify({type: "strikemsg"})) {
             history.shift();
         }
+        db.ref("chatlog").push({taggedMessage});
         // Broadcast to all clients
         for (const [client] of clients) {
             if (client.readyState === WebSocket.OPEN) {

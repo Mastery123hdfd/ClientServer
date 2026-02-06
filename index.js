@@ -19,6 +19,7 @@ const loginfo = {};
 loginfo["mhwenAdminLoginMJC"] = "1142";
 loginfo["testUser1"] ="101";
 loginfo["modOliverLimb20213"] = "30412";
+loginfo["testModerator3013"] = "lmrr1ls";
 
 const testPass = "101";
 const adminPass = "1142";
@@ -67,7 +68,7 @@ server.on("connection", socket => {
             return;
         }
         const now = new Date();
-        const timestamp = now.toLocaleTimeString("en-US", { hour12: true });
+        const timestamp = now.toLocaleTimeString("en-US", { timeZone = "America/Chicago", hour12: true });
         if(msg == "/changename" || msg == "/changemoniker"){
             monikerSet = false;
             socket.send("Please input your new username");   
@@ -136,16 +137,21 @@ server.on("connection", socket => {
         }
         const user = clients.get(socket);
         const moniker = user.moniker;
-        let taggedMessage = "";
+        let taggedString = "";
         if(user.mod){
-            taggedMessage = `(${timestamp}) | [MOD] ${moniker}: ${msg}`;
+            taggedString = `(${timestamp}) | [MOD] ${moniker}: ${msg}`;
         }
         if(user.admin){
-            taggedMessage = `(${timestamp}) | [ADMIN] ${moniker}: ${msg}`;
+            taggedString = `(${timestamp}) | [ADMIN] ${moniker}: ${msg}`;
         }
         if(!user.admin && !user.mod){
-            taggedMessage= `(${timestamp}) | ${moniker}: ${msg}`;
+            taggedString= `(${timestamp}) | ${moniker}: ${msg}`;
         }
+        taggedMessage = (JSON.stringify({
+            message:taggedString;
+            prtag: "main";
+            datatype:"chat";
+        }));
         db.ref("chatlog").once("value", snapshot=>{
             snapshot.forEach(child =>{
                 const entry = child.val();
@@ -160,7 +166,6 @@ server.on("connection", socket => {
                 db.ref("chatlog").limitToLast(1).once("value", snapshot => {
                     snapshot.forEach(child => child.ref.remove());
                 });
-
             }
             if(msg == "/clearhist" && usersocket.admin){
                 history.length = 0;

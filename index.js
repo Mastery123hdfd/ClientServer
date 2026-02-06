@@ -47,14 +47,20 @@ server.on("connection", socket => {
     socket.send("Please input your moniker");
 
     socket.on("message", msg => {
-        msg = msg.toString();
-        const userclient = socket;
+        let data;
+        try{
+            msg = msg.toString();
+        } catch(e){
+            data = JSON.parse(msg.data);
+            
+        }
         // First message = moniker
         if (!monikerSet) {
             clients.set(socket, {
                 moniker: msg,
                 admin: false,
-                mod: false
+                mod: false,
+                prtag:"main"
             });
             monikerSet = true;
 
@@ -68,11 +74,14 @@ server.on("connection", socket => {
             return;
         }
         const now = new Date();
-        const timestamp = now.toLocaleTimeString("en-US", { timeZone = "America/Chicago", hour12: true });
+        const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
         if(msg == "/changename" || msg == "/changemoniker"){
             monikerSet = false;
             socket.send("Please input your new username");   
             return;
+        }
+        if(data.type == "changePrTag"){
+            prtag = data.v1;
         }
         if(passmsg){
             passwordstring = msg;
@@ -147,17 +156,8 @@ server.on("connection", socket => {
         if(!user.admin && !user.mod){
             taggedString= `(${timestamp}) | ${moniker}: ${msg}`;
         }
-        taggedMessage = (JSON.stringify({
-            message:taggedString;
-            prtag: "main";
-            datatype:"chat";
-        }));
-        db.ref("chatlog").once("value", snapshot=>{
-            snapshot.forEach(child =>{
-                const entry = child.val();
-                history.push(entry.taggedMessage);
-            })
-        })
+        
+        
         if(command){
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
@@ -182,13 +182,25 @@ server.on("connection", socket => {
                 return;
             }
         }
-
+        taggedMessage = (JSON.stringify({
+            message:taggedString,
+            prtag: "main",
+            datatype:"chat"
+        }));
         
+        db.ref("chatlog").once("value", snapshot=>{
+            snapshot.forEach(child =>{
+                const entry = child.val();
+                history.push(entry.taggedMessage);
+            })
+        })
 
-        console.log("Broadcast:", taggedMessage);
+        console.log("Broadcast:", taggedString);
 
         // Add to history (max 200)
         
+        
+
         history.push(taggedMessage);
         if (history.length > 200 && taggedMessage != JSON.stringify({type: "clearHistory"}) && JSON.stringify({type: "strikemsg"})) {
             history.shift();
@@ -196,7 +208,7 @@ server.on("connection", socket => {
         db.ref("chatlog").push({taggedMessage});
         // Broadcast to all clients
         for (const [client] of clients) {
-            if (client.readyState === WebSocket.OPEN) {
+            if (client.readyState === WebSocket.OPEN && user.prtag == taggedMessage.prtag) {
                 client.send(taggedMessage);
             }
         }

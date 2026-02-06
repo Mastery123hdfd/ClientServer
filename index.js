@@ -48,7 +48,6 @@ server.on("connection", socket => {
 
     socket.on("message", msg => {
         let data;
-        let msg = "";
         try{
             msg = msg.toString();
         } catch(e){

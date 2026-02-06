@@ -16,14 +16,14 @@ const history = [];
 
 const loginfo = {};
 
-loginfo["mhwenAdminLoginMJC"] = "1142";
+loginfo["mhwenAdminLoginMJC"] = "2249";
 loginfo["testUser1"] ="101";
 loginfo["modOliverLimb20213"] = "30412";
 loginfo["testModerator3013"] = "lmrr1ls";
 
 const testPass = "101";
-const adminPass = "1142";
-const modAdminPassArray = ["30412"];
+const adminPass = "2249";
+const modAdminPassArray = ["30412", "lmrr1ls"];
 
 const admin = require("firebase-admin");
 
@@ -48,10 +48,12 @@ server.on("connection", socket => {
 
     socket.on("message", msg => {
         let data;
+        let msg = "";
         try{
             msg = msg.toString();
         } catch(e){
             data = JSON.parse(msg.data);
+            msg = data.msg;
             
         }
         // First message = moniker
@@ -184,7 +186,7 @@ server.on("connection", socket => {
         }
         taggedMessage = (JSON.stringify({
             message:taggedString,
-            prtag: "main",
+            prtag: data.tag,
             datatype:"chat"
         }));
         

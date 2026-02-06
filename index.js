@@ -31,8 +31,15 @@ admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
   databaseURL: process.env.FIREBASE_DB_URL
 });
-
 const db = admin.database();
+db.ref("chatlog").once("value", snapshot=>{
+    snapshot.forEach(child =>{
+        const entry = child.val();
+        history.push(entry.taggedMessage);
+    })
+})
+
+
 
 server.on("connection", socket => {
     console.log("Client connected");
@@ -47,14 +54,21 @@ server.on("connection", socket => {
     socket.send("Please input your moniker");
 
     socket.on("message", msg => {
-        let data;
-        try{
-            msg = msg.toString();
-        } catch(e){
-            data = JSON.parse(msg.data);
-            msg = data.msg;
-            
+        
+
+        
+        let data = null;
+        let raw = msg.toString();
+
+        if (raw.startsWith("{")) {
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                console.log("Invalid JSON from client:", raw);
+            }
         }
+        msg = data?.msg || raw;
+
         // First message = moniker
         if (!monikerSet) {
             clients.set(socket, {
@@ -74,6 +88,7 @@ server.on("connection", socket => {
             }
             return;
         }
+        const user = clients.get(socket);
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
         if(msg == "/changename" || msg == "/changemoniker"){
@@ -81,9 +96,11 @@ server.on("connection", socket => {
             socket.send("Please input your new username");   
             return;
         }
-        if(data.type == "changePrTag"){
-            prtag = data.v1;
+        if (data && data.type === "changePrTag") {
+            user.prtag = data.v1;
+            return;
         }
+
         if(passmsg){
             passwordstring = msg;
             const user = clients.get(socket);
@@ -145,7 +162,6 @@ server.on("connection", socket => {
                 return;
             }
         }
-        const user = clients.get(socket);
         const moniker = user.moniker;
         let taggedString = "";
         if(user.mod){
@@ -158,7 +174,7 @@ server.on("connection", socket => {
             taggedString= `(${timestamp}) | ${moniker}: ${msg}`;
         }
         
-        
+        let taggedMessage = null;
         if(command){
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
@@ -183,18 +199,23 @@ server.on("connection", socket => {
                 return;
             }
         }
+        if (taggedMessage) {
+        // send/broadcast this and return early
+            history.push(taggedMessage);
+            db.ref("chatlog").push({ taggedMessage });
+            for (const [client] of clients) {
+                client.send(taggedMessage);
+            }
+            return;
+        }
+
         taggedMessage = (JSON.stringify({
             message:taggedString,
-            prtag: data.tag,
+            prtag: user.prtag,
             datatype:"chat"
         }));
         
-        db.ref("chatlog").once("value", snapshot=>{
-            snapshot.forEach(child =>{
-                const entry = child.val();
-                history.push(entry.taggedMessage);
-            })
-        })
+        
 
         console.log("Broadcast:", taggedString);
 
@@ -203,16 +224,20 @@ server.on("connection", socket => {
         
 
         history.push(taggedMessage);
-        if (history.length > 200 && taggedMessage != JSON.stringify({type: "clearHistory"}) && JSON.stringify({type: "strikemsg"})) {
+        if (history.length > 200) {
             history.shift();
         }
+
         db.ref("chatlog").push({taggedMessage});
         // Broadcast to all clients
-        for (const [client] of clients) {
-            if (client.readyState === WebSocket.OPEN && user.prtag == taggedMessage.prtag) {
+        const parsed = JSON.parse(taggedMessage);
+
+        for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && cUser.prtag === parsed.prtag) {
                 client.send(taggedMessage);
             }
         }
+
     });
 
     socket.on("close", () => {

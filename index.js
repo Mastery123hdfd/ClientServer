@@ -222,6 +222,7 @@ server.on("connection", socket => {
                     history[user.prtag].pop();
                     taggedMessage = (JSON.stringify({type:"strikemsg"}));
                      db.ref("chatlog").limitToLast(1).once("value", snapshot => {
+                     db.ref("chatlog/" + user.prtag).limitToLast(1).once("value", snapshot => {
                      snapshot.forEach(child => child.ref.remove());
                     });
                 }

@@ -39,7 +39,7 @@ function ensureRoom(tag, user, socket) {
         if(user.mod || user.admin){
             history[tag] = [];
         }else{
-            user.send("Regular Users cannot create their own rooms.");
+            socket.send("Regular Users cannot create their own rooms.");
             for (const line of history["main"]) {
                 socket.send(line);
             }

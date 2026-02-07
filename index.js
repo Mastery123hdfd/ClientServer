@@ -67,6 +67,12 @@ const modAdminPassArray = ["30412", "lmrr1ls"];
 history["main"] = [];
 
 
+function validateRoomName(name) {
+    // Only allow alphanumeric, underscores, and hyphens
+    // Prevents path traversal attempts like "../" or "..\\"
+    return /^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 50;
+}
+
 function ensureRoom(tag, user, socket) {
     if (!history[tag]) {
         if(user.mod || user.admin){
@@ -155,6 +161,11 @@ server.on("connection", socket => {
         }
         if (data && data.type === "changePrTag") {
             const room = data.v1;
+
+            if (!validateRoomName(room)) {
+                socket.send("Invalid room name. Use only letters, numbers, underscores, and hyphens.");
+                return;
+            }
 
             if (!ensureRoom(room, user, socket)) {
                 return;

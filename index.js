@@ -121,7 +121,7 @@ server.on("connection", socket => {
 
                firstmessage = false;
             }
-            socket.send("Note; PR Rooms are highly experimental, not recommended to use. Chat history for PR room support has not been added.");
+            socket.send("Note; PR Rooms are highly experimental; storage is limited. Please try not to open any PR Rooms if you don't have to.");
             return;
         }
         const user = clients.get(socket);

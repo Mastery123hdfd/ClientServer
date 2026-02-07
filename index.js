@@ -14,6 +14,20 @@ const clients = new Map();
 const history = {};
 
 //load from firebase
+db.ref("chatlog").once("value", snapshot => {
+     snapshot.forEach(roomSnap => {
+         const room = roomSnap.key;
+          history[room] = [];
+          roomSnap.forEach(msgSnap => {
+             const entry = msgSnap.val();
+              if (entry && entry.taggedMessage) {
+                 history[room].push(entry.taggedMessage); 
+                } 
+            }); 
+        }); 
+    console.log("History loaded from Firebase"); 
+});
+
 
 const loginfo = {};
 

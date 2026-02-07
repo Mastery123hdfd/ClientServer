@@ -104,13 +104,15 @@ server.on("connection", socket => {
                 moniker: msg,
                 admin: false,
                 mod: false,
-                prtag:"main"
+                prtag:"main",
+                active: false
             });
             monikerSet = true;
 
             const user = clients.get(socket);
 
             socket.send(`Welcome, ${msg}!`);
+            user.active = true;
             if(firstmessage){
                 ensureRoom(user.prtag,user,socket);
                 for (const line of history[user.prtag]) {
@@ -158,7 +160,14 @@ server.on("connection", socket => {
             return;
         }
 
-
+        if(msg == "/getplayers"){
+          for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && client.active) {
+                socket.send(client.moniker);
+                return;
+            }
+          }
+        }
         if(passmsg){
             passwordstring = msg;
             const user = clients.get(socket);

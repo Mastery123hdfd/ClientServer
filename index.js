@@ -11,7 +11,7 @@ console.log("WebSocket server running on port", port);
 const clients = new Map();
 
 // Proper history buffer
-const history = [];
+const history = {};
 
 
 const loginfo = {};
@@ -32,13 +32,18 @@ admin.initializeApp({
   databaseURL: process.env.FIREBASE_DB_URL
 });
 const db = admin.database();
-db.ref("chatlog").once("value", snapshot=>{
+db.ref("chatlog" + room).once("value", snapshot=>{
     snapshot.forEach(child =>{
         const entry = child.val();
-        history.push(entry.taggedMessage);
+        history[room].push(entry.taggedMessage);
     })
 })
 
+function ensureRoom(tag) {
+    if (!history[tag]) {
+        history[tag] = [];
+    }
+}
 
 
 server.on("connection", socket => {
@@ -81,11 +86,14 @@ server.on("connection", socket => {
 
             socket.send(`Welcome, ${msg}!`);
             if(firstmessage){
-                for (const line of history) {
+                ensureRoom(user.prtag);
+                for (const line of history[user.prtag]) {
                     socket.send(line);
-               }
+                }
+
                firstmessage = false;
             }
+            socket.send("Note; PR Rooms are highly experimental, not recommended to use. Chat history for PR room support has not been added.");
             return;
         }
         const user = clients.get(socket);
@@ -98,6 +106,10 @@ server.on("connection", socket => {
         }
         if (data && data.type === "changePrTag") {
             user.prtag = data.v1;
+            for (const line of history[user.prtag]) {
+                socket.send(line);
+            }
+
             return;
         }
 
@@ -201,7 +213,9 @@ server.on("connection", socket => {
         }
         if (taggedMessage) {
         // send/broadcast this and return early
-            history.push(taggedMessage);
+            ensureRoom(user.prtag);
+            history[user.prtag].push(taggedMessage);
+
             db.ref("chatlog").push({ taggedMessage });
             for (const [client] of clients) {
                 client.send(taggedMessage);
@@ -223,12 +237,14 @@ server.on("connection", socket => {
         
         
 
-        history.push(taggedMessage);
-        if (history.length > 200) {
-            history.shift();
+        ensureRoom(user.prtag);
+        history[user.prtag].push(taggedMessage);
+
+        if (history[user.prtag].length > 200) {
+            history[user.prtag].shift();
         }
 
-        db.ref("chatlog").push({taggedMessage});
+        db.ref("chatlog/" + user.prtag).push({taggedMessage});
         // Broadcast to all clients
         const parsed = JSON.parse(taggedMessage);
 

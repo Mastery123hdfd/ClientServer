@@ -13,6 +13,7 @@ const clients = new Map();
 // Proper history buffer
 const history = {};
 
+//load from firebase
 
 const loginfo = {};
 

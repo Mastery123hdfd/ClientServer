@@ -297,7 +297,7 @@ server.on("connection", socket => {
             ensureRoom(user.prtag,user,socket);
             history[user.prtag].push(taggedMessage);
 
-            db.ref("chatlog").push({ taggedMessage });
+            db.ref("chatlog/" + user.prtag).push({ taggedMessage });
             for (const [client] of clients) {
                 client.send(taggedMessage);
             }

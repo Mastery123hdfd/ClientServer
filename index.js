@@ -52,9 +52,10 @@ server.on("connection", socket => {
     let command = false;
     let passwordstring="";
     socket.send("Please input your moniker");
+    
 
     socket.on("message", msg => {
-        
+       
 
         
         let data = null;
@@ -258,7 +259,7 @@ server.on("connection", socket => {
     });
 
     socket.on("close", () => {
-         const user = clients.get(socket);
+        const user = clients.get(socket);
         const moniker = user ? user.moniker : "Anonymous";
         console.log(`Client disconnected: ${moniker}`);
         clients.delete(socket);

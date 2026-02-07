@@ -33,19 +33,24 @@ admin.initializeApp({
 });
 const db = admin.database();
 
+history["main"] = [];
+
 
 function ensureRoom(tag, user, socket) {
     if (!history[tag]) {
         if(user.mod || user.admin){
             history[tag] = [];
+            return true;
         }else{
             socket.send("Regular Users cannot create their own rooms.");
             for (const line of history["main"]) {
                 socket.send(line);
             }
+            return false;
         }
         
     }
+    return true;
 }
 
 

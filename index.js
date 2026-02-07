@@ -42,7 +42,7 @@ function ensureRoom(tag, user, socket) {
             history[tag] = [];
             return true;
         }else{
-            socket.send("Regular Users cannot create their own rooms.");
+            socket.send("Regular Users cannot create their own rooms. Open rooms created by admin: ler, open1, open2. Try them out or use the room code given to you by a mod.");
             for (const line of history["main"]) {
                 socket.send(line);
             }
@@ -221,7 +221,7 @@ server.on("connection", socket => {
         if(command){
             const usersocket = clients.get(socket);
             if(msg == "/strikemsg"){
-                history.pop();
+                history[user.prtag].pop();
                 taggedMessage = (JSON.stringify({type:"strikemsg"}));
                 db.ref("chatlog").limitToLast(1).once("value", snapshot => {
                     snapshot.forEach(child => child.ref.remove());

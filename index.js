@@ -35,7 +35,7 @@ const db = admin.database();
 
 
 function ensureRoom(tag) {
-    if (!history[tag]) {
+    if (!history[tag] && user.mod) {
         history[tag] = [];
     }
 }

@@ -159,10 +159,9 @@ server.on("connection", socket => {
 
             socket.send(JSON.stringify({ type: "clearHistory" }));
                // Send room history
-               for (const line of history[room]) {
-                   socket.send(line);
-               }
-            });
+            for (const line of history[room]) {
+               socket.send(line);
+            }
 
             return;
         }

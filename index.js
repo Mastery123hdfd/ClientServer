@@ -99,10 +99,8 @@ server.on("connection", socket => {
     
 
     socket.on("message", msg => {
-       
-    if(msg == ""){
-        return;
-    }
+    
+    
 
         
         let data = null;
@@ -117,7 +115,7 @@ server.on("connection", socket => {
         }
         msg = data?.msg || raw;
 
-        if (!msg || msg.trim() === "") {
+        if(msg == ""){
             return;
         }
 

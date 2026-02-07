@@ -34,9 +34,17 @@ admin.initializeApp({
 const db = admin.database();
 
 
-function ensureRoom(tag) {
-    if (!history[tag] && user.mod) {
-        history[tag] = [];
+function ensureRoom(tag, user, socket) {
+    if (!history[tag]) {
+        if(user.mod || user.admin){
+            history[tag] = [];
+        }else{
+            user.send("Regular Users cannot create their own rooms.");
+            for (const line of history["main"]) {
+                socket.send(line);
+            }
+        }
+        
     }
 }
 
@@ -84,7 +92,7 @@ server.on("connection", socket => {
 
             socket.send(`Welcome, ${msg}!`);
             if(firstmessage){
-                ensureRoom(user.prtag);
+                ensureRoom(user.prtag,user,socket);
                 for (const line of history[user.prtag]) {
                     socket.send(line);
                 }
@@ -217,7 +225,7 @@ server.on("connection", socket => {
         }
         if (taggedMessage) {
         // send/broadcast this and return early
-            ensureRoom(user.prtag);
+            ensureRoom(user.prtag,user,socket);
             history[user.prtag].push(taggedMessage);
 
             db.ref("chatlog").push({ taggedMessage });
@@ -241,7 +249,7 @@ server.on("connection", socket => {
         
         
 
-        ensureRoom(user.prtag);
+        ensureRoom(user.prtag,user,socket);
         history[user.prtag].push(taggedMessage);
 
         if (history[user.prtag].length > 200) {

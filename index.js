@@ -101,10 +101,10 @@ server.on("connection", socket => {
         }
         if (data && data.type === "changePrTag") {
             user.prtag = data.v1;
-            db.ref("chatlog" + room).once("value", snapshot=>{
+            db.ref("chatlog" + user.prtag).once("value", snapshot=>{
                 snapshot.forEach(child =>{
                     const entry = child.val();
-                    history[room].push(entry.taggedMessage);
+                    history[user.prtag].push(entry.taggedMessage);
                 })
             })
             for (const line of history[user.prtag]) {

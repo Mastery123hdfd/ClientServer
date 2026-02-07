@@ -229,7 +229,7 @@ server.on("connection", socket => {
                     history[user.prtag] = [];
                     taggedMessage = JSON.stringify({ type: "clearHistory" });
                     db.ref("chatlog/" + user.prtag).remove();
-                } else if(usersocket.mod && !usersocket.admin){
+                } else if(user.mod && !user.admin){
                     socket.send("Moderators cannot use this command.");
                     return;
                 }

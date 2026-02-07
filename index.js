@@ -116,19 +116,33 @@ server.on("connection", socket => {
             return;
         }
         if (data && data.type === "changePrTag") {
-            user.prtag = data.v1;
-            db.ref("chatlog" + user.prtag).once("value", snapshot=>{
-                snapshot.forEach(child =>{
-                    const entry = child.val();
-                    history[user.prtag].push(entry.taggedMessage);
-                })
-            })
-            for (const line of history[user.prtag]) {
-                socket.send(line);
+            const room = data.v1;
+
+            if (!ensureRoom(room, user, socket)) {
+                return;
             }
+
+            user.prtag = room;
+
+            socket.send(JSON.stringify({ type: "clearHistory" }));
+
+            db.ref("chatlog/" + room).once("value", snapshot => {
+               snapshot.forEach(child => {
+                    const entry = child.val();
+                    if (entry && entry.taggedMessage) {
+                       history[room].push(entry.taggedMessage);
+                    }
+               });
+
+               // Send room history
+               for (const line of history[room]) {
+                   socket.send(line);
+               }
+            });
 
             return;
         }
+
 
         if(passmsg){
             passwordstring = msg;

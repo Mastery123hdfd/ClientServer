@@ -225,7 +225,7 @@ server.on("connection", socket => {
                      snapshot.forEach(child => child.ref.remove());
                     });
                 }
-                if (msg == "/clearhist" && usersocket.admin) {
+                if (msg == "/clearhist" && user.admin) {
                     history[user.prtag] = [];
                     taggedMessage = JSON.stringify({ type: "clearHistory" });
                     db.ref("chatlog/" + user.prtag).remove();
@@ -233,6 +233,13 @@ server.on("connection", socket => {
                     socket.send("Moderators cannot use this command.");
                     return;
                 }
+                if(msg == "/getprlist" && user.mod){
+                    socket.send("====Available Rooms====");
+                    for (const p of Object.keys(history)) {
+                        socket.send(p);
+                    }
+                }
+                
                 if(msg =="/cmdoff"){
                     socket.send("Command Mode Deactivated");
                     command = false;

@@ -194,56 +194,52 @@ server.on("connection", socket => {
             return;
         }
         if(msg == "/cmd"){
-            const usersocket = clients.get(socket);
-            if(usersocket.mod || usersocket.admin){
-                command = true;
-                socket.send("Command Mode Activated");
-                return;
+                if(usersocket.mod || usersocket.admin){
+                    command = true;
+                    socket.send("Command Mode Activated");
+                    return;
+                }
+                else{
+                    socket.send("you do not have permission to use this command");
+                    return;
+                }
             }
-            else{
-                socket.send("you do not have permission to use this command");
-                return;
+            const moniker = user.moniker;
+            let taggedString = "";
+            if(user.mod){
+                taggedString = `(${timestamp}) | [MOD] ${moniker}: ${msg}`;
             }
-        }
-        const moniker = user.moniker;
-        let taggedString = "";
-        if(user.mod){
-            taggedString = `(${timestamp}) | [MOD] ${moniker}: ${msg}`;
-        }
-        if(user.admin){
-            taggedString = `(${timestamp}) | [ADMIN] ${moniker}: ${msg}`;
-        }
-        if(!user.admin && !user.mod){
-            taggedString= `(${timestamp}) | ${moniker}: ${msg}`;
-        }
+            if(user.admin){
+                    taggedString = `(${timestamp}) | [ADMIN] ${moniker}: ${msg}`;
+            }
+            if(!user.admin && !user.mod){
+                 taggedString= `(${timestamp}) | ${moniker}: ${msg}`;
+            }
         
-        let taggedMessage = null;
-        if(command){
-            const usersocket = clients.get(socket);
-            if(msg == "/strikemsg"){
-                history[user.prtag].pop();
-                taggedMessage = (JSON.stringify({type:"strikemsg"}));
-                db.ref("chatlog").limitToLast(1).once("value", snapshot => {
-                    snapshot.forEach(child => child.ref.remove());
-                });
+            let taggedMessage = null;
+            if(command){
+                if(msg == "/strikemsg"){
+                    history[user.prtag].pop();
+                    taggedMessage = (JSON.stringify({type:"strikemsg"}));
+                     db.ref("chatlog").limitToLast(1).once("value", snapshot => {
+                     snapshot.forEach(child => child.ref.remove());
+                    });
+                }
+                if (msg == "/clearhist" && usersocket.admin) {
+                    history[user.prtag] = [];
+                    taggedMessage = JSON.stringify({ type: "clearHistory" });
+                    db.ref("chatlog/" + user.prtag).remove();
+                } else if(usersocket.mod && !usersocket.admin){
+                    socket.send("Moderators cannot use this command.");
+                    return;
+                }
+                if(msg =="/cmdoff"){
+                    socket.send("Command Mode Deactivated");
+                    command = false;
+                    return;
+                }
             }
-            if (msg == "/clearhist" && usersocket.admin) {
-                history[user.prtag] = [];
-                taggedMessage = JSON.stringify({ type: "clearHistory" });
-                db.ref("chatlog/" + user.prtag).remove();
-            }
-
-            } else if(usersocket.mod && !usersocket.admin){
-                socket.send("Moderators cannot use this command.");
-                return;
-            }
-            if(msg =="/cmdoff"){
-                socket.send("Command Mode Deactivated");
-                command = false;
-                return;
-            }
-        }
-        if (taggedMessage) {
+        if(taggedMessage) {
         // send/broadcast this and return early
             ensureRoom(user.prtag,user,socket);
             history[user.prtag].push(taggedMessage);

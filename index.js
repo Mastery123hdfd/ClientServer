@@ -162,8 +162,8 @@ server.on("connection", socket => {
 
         if(msg == "/getplayers"){
           for (const [client, cUser] of clients) {
-            if (client.readyState === WebSocket.OPEN && client.active) {
-                socket.send(client.moniker);
+            if (client.readyState === WebSocket.OPEN && cUser.active) {
+                socket.send(cUser.moniker);
                 return;
             }
           }
@@ -317,6 +317,7 @@ server.on("connection", socket => {
 
     socket.on("close", () => {
         const user = clients.get(socket);
+        user.active = false;
         const moniker = user ? user.moniker : "Anonymous";
         console.log(`Client disconnected: ${moniker}`);
         clients.delete(socket);

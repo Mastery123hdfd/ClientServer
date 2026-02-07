@@ -194,7 +194,7 @@ server.on("connection", socket => {
             return;
         }
         if(msg == "/cmd"){
-                if(usersocket.mod || usersocket.admin){
+                if(user.mod || user.admin){
                     command = true;
                     socket.send("Command Mode Activated");
                     return;

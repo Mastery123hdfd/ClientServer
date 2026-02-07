@@ -19,6 +19,7 @@ const clients = new Map();
 // Proper history buffer
 const history = {};
 
+
 //load from firebase
 db.ref("chatlog").once("value", snapshot => {
      snapshot.forEach(roomSnap => {
@@ -142,15 +143,6 @@ server.on("connection", socket => {
             user.prtag = room;
 
             socket.send(JSON.stringify({ type: "clearHistory" }));
-
-            db.ref("chatlog/" + room).once("value", snapshot => {
-               snapshot.forEach(child => {
-                    const entry = child.val();
-                    if (entry && entry.taggedMessage) {
-                       history[room].push(entry.taggedMessage);
-                    }
-               });
-
                // Send room history
                for (const line of history[room]) {
                    socket.send(line);

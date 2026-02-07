@@ -80,6 +80,8 @@ server.on("connection", socket => {
             });
             monikerSet = true;
 
+            const user = clients.get(socket);
+
             socket.send(`Welcome, ${msg}!`);
             if(firstmessage){
                 ensureRoom(user.prtag);

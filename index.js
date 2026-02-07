@@ -32,12 +32,7 @@ admin.initializeApp({
   databaseURL: process.env.FIREBASE_DB_URL
 });
 const db = admin.database();
-db.ref("chatlog" + room).once("value", snapshot=>{
-    snapshot.forEach(child =>{
-        const entry = child.val();
-        history[room].push(entry.taggedMessage);
-    })
-})
+
 
 function ensureRoom(tag) {
     if (!history[tag]) {
@@ -106,6 +101,12 @@ server.on("connection", socket => {
         }
         if (data && data.type === "changePrTag") {
             user.prtag = data.v1;
+            db.ref("chatlog" + room).once("value", snapshot=>{
+                snapshot.forEach(child =>{
+                    const entry = child.val();
+                    history[room].push(entry.taggedMessage);
+                })
+            })
             for (const line of history[user.prtag]) {
                 socket.send(line);
             }

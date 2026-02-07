@@ -1,4 +1,10 @@
+const admin = require("firebase-admin");
 
+admin.initializeApp({
+  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+  databaseURL: process.env.FIREBASE_DB_URL
+});
+const db = admin.database();
 
 const WebSocket = require("ws");
 
@@ -29,6 +35,22 @@ db.ref("chatlog").once("value", snapshot => {
 });
 
 
+//load from firebase
+db.ref("chatlog").once("value", snapshot => {
+     snapshot.forEach(roomSnap => {
+         const room = roomSnap.key;
+          history[room] = [];
+          roomSnap.forEach(msgSnap => {
+             const entry = msgSnap.val();
+              if (entry && entry.taggedMessage) {
+                 history[room].push(entry.taggedMessage); 
+                } 
+            }); 
+        }); 
+    console.log("History loaded from Firebase"); 
+});
+
+
 const loginfo = {};
 
 loginfo["mhwenAdminLoginMJC"] = "2249";
@@ -40,13 +62,7 @@ const testPass = "101";
 const adminPass = "2249";
 const modAdminPassArray = ["30412", "lmrr1ls"];
 
-const admin = require("firebase-admin");
 
-admin.initializeApp({
-  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
-  databaseURL: process.env.FIREBASE_DB_URL
-});
-const db = admin.database();
 
 history["main"] = [];
 
@@ -104,13 +120,15 @@ server.on("connection", socket => {
                 moniker: msg,
                 admin: false,
                 mod: false,
-                prtag:"main"
+                prtag:"main",
+                active: false
             });
             monikerSet = true;
 
             const user = clients.get(socket);
 
             socket.send(`Welcome, ${msg}!`);
+            user.active = true;
             if(firstmessage){
                 ensureRoom(user.prtag,user,socket);
                 for (const line of history[user.prtag]) {
@@ -119,7 +137,7 @@ server.on("connection", socket => {
 
                firstmessage = false;
             }
-            socket.send("Note; PR Rooms are highly experimental, not recommended to use. Chat history for PR room support has not been added.");
+            socket.send("Note; PR Rooms are highly experimental; storage is limited. Please try not to open any PR Rooms if you don't have to.");
             return;
         }
         const user = clients.get(socket);
@@ -140,15 +158,6 @@ server.on("connection", socket => {
             user.prtag = room;
 
             socket.send(JSON.stringify({ type: "clearHistory" }));
-
-            db.ref("chatlog/" + room).once("value", snapshot => {
-               snapshot.forEach(child => {
-                    const entry = child.val();
-                    if (entry && entry.taggedMessage) {
-                       history[room].push(entry.taggedMessage);
-                    }
-               });
-
                // Send room history
                for (const line of history[room]) {
                    socket.send(line);
@@ -158,7 +167,14 @@ server.on("connection", socket => {
             return;
         }
 
-
+        if(msg == "/getplayers"){
+          for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && cUser.active) {
+                socket.send(cUser.moniker);
+                return;
+            }
+          }
+        }
         if(passmsg){
             passwordstring = msg;
             const user = clients.get(socket);
@@ -308,6 +324,7 @@ server.on("connection", socket => {
 
     socket.on("close", () => {
         const user = clients.get(socket);
+        user.active = false;
         const moniker = user ? user.moniker : "Anonymous";
         console.log(`Client disconnected: ${moniker}`);
         clients.delete(socket);

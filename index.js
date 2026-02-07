@@ -114,6 +114,11 @@ server.on("connection", socket => {
         }
         msg = data?.msg || raw;
 
+        // Skip empty messages
+        if (!msg || msg.trim() === "") {
+            return;
+        }
+
         // First message = moniker
         if (!monikerSet) {
             clients.set(socket, {

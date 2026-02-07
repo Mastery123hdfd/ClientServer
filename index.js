@@ -227,10 +227,11 @@ server.on("connection", socket => {
                     snapshot.forEach(child => child.ref.remove());
                 });
             }
-            if(msg == "/clearhist" && usersocket.admin){
-                history.length = 0;
-                taggedMessage = (JSON.stringify({type: "clearHistory"}));
-                db.ref("chatlog").remove();
+            if (msg == "/clearhist" && usersocket.admin) {
+                history[user.prtag] = [];
+                taggedMessage = JSON.stringify({ type: "clearHistory" });
+                db.ref("chatlog/" + user.prtag).remove();
+            }
 
             } else if(usersocket.mod && !usersocket.admin){
                 socket.send("Moderators cannot use this command.");

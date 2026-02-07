@@ -1,4 +1,10 @@
+const admin = require("firebase-admin");
 
+admin.initializeApp({
+  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+  databaseURL: process.env.FIREBASE_DB_URL
+});
+const db = admin.database();
 
 const WebSocket = require("ws");
 
@@ -40,13 +46,7 @@ const testPass = "101";
 const adminPass = "2249";
 const modAdminPassArray = ["30412", "lmrr1ls"];
 
-const admin = require("firebase-admin");
 
-admin.initializeApp({
-  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
-  databaseURL: process.env.FIREBASE_DB_URL
-});
-const db = admin.database();
 
 history["main"] = [];
 

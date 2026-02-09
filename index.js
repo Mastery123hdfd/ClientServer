@@ -300,6 +300,17 @@ server.on("connection", socket => {
                   socket.send(history[user.prtag].length);
                   return;
                 }
+                if(msg=="/delroom" && user.admin){
+                  if(user.prtag == "main"){
+                    socket.send("Room 'main' cannot be removed");
+                    return;
+                  } else{
+                    previoustag = user.prtag;
+                    user.prtag = "main";
+                    db.ref("chatlog/" + previoustag).remove();
+                    socket.send("Room removed; User moved to room 'main'");
+                  }
+                }
                 
                 if(msg =="/cmdoff"){
                     socket.send("Command Mode Deactivated");

@@ -99,7 +99,7 @@ server.on("connection", socket => {
     let loginmsg = false;
     let passmsg = false;
     let loginstring = "";
-    let command = true;
+    let command = false;
     let passwordstring="";
     socket.send("Please input your moniker");
     

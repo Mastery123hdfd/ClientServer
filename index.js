@@ -311,6 +311,16 @@ server.on("connection", socket => {
                     socket.send("Room removed; User moved to room 'main'");
                   }
                 }
+                if(msg == "/getPlayerLoc" && user.admin){
+                  for (const [client, cUser] of clients) {
+                    if (client.readyState === WebSocket.OPEN && cUser.active) {
+                      socket.send(cUser.moniker);
+                      socket.send(cUser.prtag);
+                      
+                    }
+                  }
+                  return;
+                }
                 
                 if(msg =="/cmdoff"){
                     socket.send("Command Mode Deactivated");

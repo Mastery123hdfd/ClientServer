@@ -339,7 +339,6 @@ server.on("connection", socket => {
 
     socket.on("close", () => {
         const user = clients.get(socket);
-        user.active = false;
         const moniker = user ? user.moniker : "Anonymous";
         console.log(`Client disconnected: ${moniker}`);
         clients.delete(socket);

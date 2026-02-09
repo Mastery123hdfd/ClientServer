@@ -314,6 +314,7 @@ server.on("connection", socket => {
                     db.ref("chatlog/" + previoustag).remove();
                     socket.send("Room removed; User moved to room 'main'");
                   }
+                  return;
                 }
                 if(msg == "/getPlayerLoc" && user.admin){
                   for (const [client, cUser] of clients) {

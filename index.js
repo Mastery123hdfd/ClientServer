@@ -99,7 +99,7 @@ server.on("connection", socket => {
     let loginmsg = false;
     let passmsg = false;
     let loginstring = "";
-    let command = false;
+    let command = true;
     let passwordstring="";
     socket.send("Please input your moniker");
     
@@ -130,7 +130,7 @@ server.on("connection", socket => {
             clients.set(socket, {
                 moniker: msg,
                 admin: false,
-                mod: false,
+                mod: true,
                 prtag:"main",
                 active: false
             });

@@ -131,7 +131,7 @@ server.on("connection", socket => {
             clients.set(socket, {
                 moniker: msg,
                 admin: false,
-                mod: true,
+                mod: false,
                 prtag:"main",
                 active: false
             });
@@ -289,9 +289,6 @@ server.on("connection", socket => {
                     history[user.prtag] = [];
                     taggedMessage = JSON.stringify({ type: "clearHistory" });
                     db.ref("chatlog/" + user.prtag).remove();
-                } else if(user.mod && !user.admin){
-                    socket.send("Moderators cannot use this command.");
-                    return;
                 }
                 if(msg == "/getprlist" && user.mod){
                     socket.send("====Available Rooms====");
@@ -302,9 +299,6 @@ server.on("connection", socket => {
                 if(msg=="/gethistlength" && user.admin){
                   socket.send(history[user.prtag].length);
                   return;
-                }
-                else if(user.mod && !user.admin){
-                  socket.send("Moderators cannot use this command.");
                 }
                 
                 if(msg =="/cmdoff"){

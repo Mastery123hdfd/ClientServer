@@ -19,6 +19,14 @@ const clients = new Map();
 // Proper history buffer
 const history = {};
 
+
+
+function validateRoomName(name) {
+    // Only allow alphanumeric, underscores, and hyphens
+    // Prevents path traversal attempts like "../" or "..\\"
+    return /^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 50;
+}
+
 //load from firebase
 db.ref("chatlog").once("value", snapshot => {
      snapshot.forEach(roomSnap => {
@@ -58,21 +66,17 @@ loginfo["mhwenAdminLoginMJC"] = "2249";
 loginfo["testUser1"] ="101";
 loginfo["modOliverLimb20213"] = "30412";
 loginfo["testModerator3013"] = "lmrr1ls";
+//Hard-coded accounts that are embedded into the server.
 
 const testPass = "101";
 const adminPass = "2249";
-const modAdminPassArray = ["30412", "lmrr1ls"];
-
+let modAdminPassArray = ["30412", "lmrr1ls"];
+let AdminPassArray = ["2249"];
+let regularPass = ["101"];
 
 
 history["main"] = [];
 
-
-function validateRoomName(name) {
-    // Only allow alphanumeric, underscores, and hyphens
-    // Prevents path traversal attempts like "../" or "..\\"
-    return /^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 50;
-}
 
 function ensureRoom(tag, user, socket) {
     if (!history[tag]) {
@@ -91,6 +95,42 @@ function ensureRoom(tag, user, socket) {
     return true;
 }
 
+class Account{
+  constructor(user, pass, admin, mod){
+    this.user = user;
+    this.pass = pass;
+    this.mod = mod;
+    this.admin = admin;
+  }
+  verify(userin, passin){
+    if(user == userin && pass == passin){
+      return true;
+    } else{
+      return false;
+    }
+  }
+  getuser(){
+    return user;
+  }
+}
+
+let aclist = [];
+
+/*function encodeLoginData(a, db){
+  if(validateRoomName(a.getuser()))
+    db.ref("logindata/" + "accountdata/").push(a);
+  }
+}
+
+function getLoginData(){
+  let b = [];
+  const accountlist = db.ref("logindata/" + "accountdata/");
+  for( a of accountlist){
+    b.push(a);
+  }
+  return b;
+}*/
+
 
 server.on("connection", socket => {
     console.log("Client connected");
@@ -103,7 +143,17 @@ server.on("connection", socket => {
     let command = false;
     let passwordstring="";
     socket.send("Please input your moniker");
-    
+ // Decode login info from Account Info
+    for(a in aclist){
+      if(a.mod){
+        modAdminPassArray.push(a.pass); 
+      } else if (a.admin){
+        AdminPassAray.push(a.pass);
+      } else{
+        regularPass.push(a.pass);
+      }
+      loginfo[a.user] = a.pass;
+    }
 
     socket.on("message", msg => {
     
@@ -166,7 +216,7 @@ server.on("connection", socket => {
           socket.send("Step 2: Input username (E.X. testUser1)");
           socket.send("Step 3: Input password (E.X. 101)");
           socket.send("Use the login info given to you by a moderator or admin to login.");
-          socket.send("NOTE: This system is temporary, a better login system is on the way!");
+          socket.send("NOTE: This system is temporary, a better login system is currently being developed.");
         }
         if(msg == "/changename" || msg == "/changemoniker"){
             monikerSet = false;
@@ -195,6 +245,11 @@ server.on("connection", socket => {
 
             return;
         }
+      if (data && data.type == "login){
+          const userin = data.v1;
+          const passin = data.v2;
+          
+      }
 
         if(msg == "/getplayers"){
           for (const [client, cUser] of clients) {
@@ -207,12 +262,11 @@ server.on("connection", socket => {
         if(passmsg){
             passwordstring = msg;
             const user = clients.get(socket);
-
-
             if (loginstring in loginfo && loginfo[loginstring] == passwordstring) {
                 if(passwordstring == testPass){
                     socket.send("Test successful, client not marked");
                 }
+                
                 else if(modAdminPassArray.includes(passwordstring)){
                     socket.send("Account Upgraded to Moderator Status. NOTE: Changing monikers will revoke permissions.");
                     user.mod = true;

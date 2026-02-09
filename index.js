@@ -50,6 +50,7 @@ db.ref("chatlog").once("value", snapshot => {
     console.log("History loaded from Firebase"); 
 });
 
+const cmdliststring ="====Command List==== \n /help: Displays this menu \n /cmd: Activates command mode \n /getprlist: Gets a list of all private rooms; MOD / ADMIN ONLY; COMMAND MODE REQUIRED \n /strikemsg: Removes a message from the chat history and clears it from everyone's logs; MOD / ADMIN ONLY; COMMAND MODE REQUIRED \n /clearhist: Clears the entire history of the current chat room; ADMIN ONLY; COMMAND MODE REQUIRED \n /getplayers: Gets a list of all users currently online; BROKEN \n /login: Starts the login process \n /changename: Changes your name \n /gethistlength: Gets the length of the current chat history; ADMIN ONLY; COMMAND MODE REQUIRED \n /loginhelp: Gives you instructions on how to login"; 
 
 const loginfo = {};
 
@@ -154,6 +155,13 @@ server.on("connection", socket => {
         const user = clients.get(socket);
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
+        if(msg=="/help"){
+          socket.send(cmdliststring);
+          return;
+        }
+        if(msg == "/loginhelp"){
+          socket.send("Step 1: Input /login \n Step 2: Input username (E.X. testUser1) \n Step 3: Input password (E.X. 101) \n Use the login info given to you by a moderator or admin to login. \n NOTE: This system is temporary, a better login system is on the way!");
+        }
         if(msg == "/changename" || msg == "/changemoniker"){
             monikerSet = false;
             socket.send("Please input your new username");   
@@ -186,9 +194,9 @@ server.on("connection", socket => {
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.active) {
                 socket.send(cUser.moniker);
-                return;
             }
           }
+          return;
         }
         if(passmsg){
             passwordstring = msg;

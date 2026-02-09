@@ -149,7 +149,7 @@ server.on("connection", socket => {
 
                firstmessage = false;
             }
-            socket.send("Note; PR Rooms are highly experimental; storage is limited. Please try not to open any PR Rooms if you don't have to.");
+            socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
             return;
         }
         const user = clients.get(socket);

@@ -285,6 +285,12 @@ server.on("connection", socket => {
                         socket.send(p);
                     }
                 }
+                if(msg=="/gethistlength" && user.admin){
+                  return history[user.prtag].length
+                }
+                else if(user.mod && !user.admin){
+                  socket.send("Moderators cannot use this command.");
+                }
                 
                 if(msg =="/cmdoff"){
                     socket.send("Command Mode Deactivated");
@@ -319,6 +325,8 @@ server.on("connection", socket => {
         
 
         ensureRoom(user.prtag,user,socket);
+
+      
         history[user.prtag].push(taggedMessage);
 
         if (history[user.prtag].length > 200) {

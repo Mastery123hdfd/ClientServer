@@ -286,7 +286,8 @@ server.on("connection", socket => {
                     }
                 }
                 if(msg=="/gethistlength" && user.admin){
-                  return history[user.prtag].length
+                  socket.send(history[user.prtag].length);
+                  return;
                 }
                 else if(user.mod && !user.admin){
                   socket.send("Moderators cannot use this command.");

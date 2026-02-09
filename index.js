@@ -307,6 +307,10 @@ server.on("connection", socket => {
                   } else{
                     previoustag = user.prtag;
                     user.prtag = "main";
+                    socket.send(JSON.stringify({ type: "clearHistory" }));
+                    for (const line of history["main"]) {
+                       socket.send(line);
+                    }
                     db.ref("chatlog/" + previoustag).remove();
                     socket.send("Room removed; User moved to room 'main'");
                   }

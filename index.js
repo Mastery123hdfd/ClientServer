@@ -145,15 +145,14 @@ server.on("connection", socket => {
     let firstmessage = true;
     let command = false;
  // Decode login info from Account Info
-    let usernm = "UNKNOWN (Account Not Logged In)";
-  clients.set(socket, {
-                moniker: usernm,
-                admin: false,
-                mod: false,
-                prtag:"main2",
-                active: false,
-                loggedIn: false
-            });
+    clients.set(socket, {
+      moniker: "UNKNOWN",
+      admin: false,
+      mod: false,
+      prtag:"main2",
+      active: false,
+      oggedIn: false
+    });
 
     socket.on("message", msg => {
         
@@ -174,20 +173,16 @@ server.on("connection", socket => {
         if(msg == ""){
             return;
         }
-
-            
-            
-
-            const user = clients.get(socket);
-            user.active = true;
-            if(firstmessage){
-                ensureRoom(user.prtag,user,socket);
-                for (const line of history[user.prtag]) {
-                    socket.send(line);
-                }
-                socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
-               firstmessage = false;
-            }
+        const user = clients.get(socket);
+        user.active = true;
+        if(firstmessage){
+          ensureRoom(user.prtag,user,socket);
+          for (const line of history[user.prtag]) {
+             socket.send(line);
+          }
+          socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
+          firstmessage = false;
+        }
             
         if(user.newName){
           if(!validateRoomName(msg)){
@@ -195,7 +190,6 @@ server.on("connection", socket => {
             user.newName = false;
             return;
           } else{
-            usernm = msg;
             user.moniker = msg;
             user.newName = false;
             socket.send("Name changed. New name: " + user.moniker);
@@ -214,9 +208,6 @@ server.on("connection", socket => {
             } else{
               const username = session.username;
               const pass = loginfo[username];
-
-              usernm = username;
-
               user.moniker = username;
               user.loggedIn = true;
 
@@ -292,7 +283,6 @@ server.on("connection", socket => {
           const passin = data.v2;
           const acnew = ensureAccount(userin, passin);
           if(acnew){
-            usernm = userin;
             user.moniker = userin;
             user.mod = false; 
             user.admin = false; 

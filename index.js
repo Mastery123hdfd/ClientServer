@@ -160,7 +160,6 @@ server.on("connection", socket => {
         }
         
         msg = data?.msg || raw;
-        data = raw;
 
         if(msg == ""){
             return;
@@ -278,6 +277,7 @@ server.on("connection", socket => {
             return;
         }
       if (data && data.type == "login"){
+        socket.send("Login Data received; Beginnning Login Process");
         if(user.loggedIn){
           socket.send("Error: User already logged in");
           return;

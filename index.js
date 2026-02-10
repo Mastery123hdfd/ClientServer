@@ -319,6 +319,12 @@ server.on("connection", socket => {
             if (acc) {
                 user.admin = acc.admin;
                 user.mod = acc.mod;
+                if(user.admin){
+                    socket.send("WELCOME ADMINISTRATOR.");
+                }
+                if(user.mod && !user.admin){
+                    socket.send("Welcome Moderator.");
+                }
             }else{
               socket.send("Incorrect sign-in data");
               return;

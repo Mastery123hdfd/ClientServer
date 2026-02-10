@@ -145,12 +145,13 @@ server.on("connection", socket => {
     let firstmessage = true;
     let command = false;
  // Decode login info from Account Info
+    let usernm = "UNKNOWN (Account Not Logged In)"
 
     socket.on("message", msg => {
         
         let data = null;
         let raw = msg.toString();
-        let usernm = "UNKNOWN (Account Not Logged In)"
+        
 
         if (raw.startsWith("{")) {
             try {
@@ -193,6 +194,7 @@ server.on("connection", socket => {
             user.newName = false;
             return;
           } else{
+            usernm = msg;
             user.moniker = msg;
             user.newName = false;
             socket.send("Name changed. New name: " + user.moniker);
@@ -211,6 +213,8 @@ server.on("connection", socket => {
             } else{
               const username = session.username;
               const pass = loginfo[username];
+
+              usernm = username;
 
               user.moniker = username;
               user.loggedIn = true;
@@ -285,6 +289,7 @@ server.on("connection", socket => {
           const passin = data.v2;
           const acnew = ensureAccount(userin, passin);
           if(acnew){
+            usernm = userin;
             user.moniker = userin;
             user.mod = false; 
             user.admin = false; 

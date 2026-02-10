@@ -62,7 +62,7 @@ let AdminPassArray = ["2249"];
 let regularPass = ["101"];
 
 
-history["main"] = [];
+history["main2"] = [];
 
 
 function ensureRoom(tag, user, socket) {
@@ -72,7 +72,7 @@ function ensureRoom(tag, user, socket) {
             return true;
         }else{
             socket.send("Regular Users cannot create their own rooms. Open rooms created by admin: ler, open1, open2. Try them out or use the room code given to you by a mod.");
-            for (const line of history["main"]) {
+            for (const line of history["main2"]) {
                 socket.send(line);
             }
             return false;
@@ -170,7 +170,7 @@ server.on("connection", socket => {
                 moniker: "UNKNOWN (This Account is not Logged In)",
                 admin: false,
                 mod: false,
-                prtag:"main",
+                prtag:"main2",
                 active: false,
                 loggedIn: false
             });
@@ -386,14 +386,14 @@ server.on("connection", socket => {
                   return;
                 }
                 if(msg=="/delroom" && user.admin){
-                  if(user.prtag == "main"){
+                  if(user.prtag == "main2"){
                     socket.send("Room 'main' cannot be removed");
                     return;
                   } else{
                     let previoustag = user.prtag;
-                    user.prtag = "main";
+                    user.prtag = "main2";
                     socket.send(JSON.stringify({ type: "clearHistory" }));
-                    for (const line of history["main"]) {
+                    for (const line of history["main2"]) {
                        socket.send(line);
                     }
                     db.ref("chatlog/" + previoustag).remove();

@@ -302,7 +302,7 @@ server.on("connection", socket => {
                 username: user.moniker,
                 timestamp: Date.now()
               }); 
-              socket.send(JSON.stringify({ type: "sessionToken", token }));
+              socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
               
               if(modAdminPassArray.includes(passin)){
                 user.mod = true;

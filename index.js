@@ -150,6 +150,7 @@ server.on("connection", socket => {
         
         let data = null;
         let raw = msg.toString();
+        let usernm = "UNKNOWN (Account Not Logged In)"
 
         if (raw.startsWith("{")) {
             try {
@@ -166,7 +167,7 @@ server.on("connection", socket => {
         }
 
             clients.set(socket, {
-                moniker: "UNKNOWN (This Account is not Logged In)",
+                moniker: usernm,
                 admin: false,
                 mod: false,
                 prtag:"main2",
@@ -182,10 +183,10 @@ server.on("connection", socket => {
                 for (const line of history[user.prtag]) {
                     socket.send(line);
                 }
-
+                socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
                firstmessage = false;
             }
-            socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
+            
         if(user.newName){
           if(!validateRoomName(msg)){
             socket.send("Invalid Moniker");

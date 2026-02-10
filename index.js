@@ -302,18 +302,7 @@ server.on("connection", socket => {
               user.loggedIn = true;
             }
           }
-            const token = Math.random().toString(36).slice(2);
-            user.sessionToken = token; db.ref("sessions/" + token).set({ 
-              username: userin,
-              admin: !!user.admin,
-              mod: !!user.mod,
-              timestamp: Date.now()
-            }).then(() => {
-                console.log("Session token stored in Firebase for user:", userin);
-                 socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
-            });
-            socket.send(" Session token created");
-            socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+            
               
             const acc = aclist.find(a => a.user === userin && a.pass === passin);
             if (acc) {
@@ -330,7 +319,19 @@ server.on("connection", socket => {
               return;
             }
             return;
-          }
+            }
+            const token = Math.random().toString(36).slice(2);
+            user.sessionToken = token; db.ref("sessions/" + token).set({ 
+              username: userin,
+              admin: !!user.admin,
+              mod: !!user.mod,
+              timestamp: Date.now()
+            }).then(() => {
+                console.log("Session token stored in Firebase for user:", userin);
+                 socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+            });
+            socket.send(" Session token created");
+            socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
 
 
         if(msg == "/getplayers"){

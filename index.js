@@ -158,7 +158,9 @@ server.on("connection", socket => {
                 console.log("Invalid JSON from client:", raw);
             }
         }
+        
         msg = data?.msg || raw;
+        data = raw;
 
         if(msg == ""){
             return;
@@ -377,6 +379,7 @@ server.on("connection", socket => {
                     }
                 }
                 if(msg=="/gethistlength" && user.admin){
+                  ensureRoom(prtag, user, socket);
                   socket.send(history[user.prtag].length);
                   return;
                 }
@@ -405,6 +408,9 @@ server.on("connection", socket => {
                     }
                   }
                   return;
+                }
+                if(msg == "/giveMod" && user.admin){
+                  user.mod = true;
                 }
                 
                 if(msg =="/cmdoff"){
@@ -436,15 +442,13 @@ server.on("connection", socket => {
         console.log("Broadcast:", taggedString);
 
         // Add to history (max 200)
-        
-        
 
         ensureRoom(user.prtag,user,socket);
 
       
         history[user.prtag].push(taggedMessage);
 
-        if (history[user.prtag].length > 200) {
+        if (history[user.prtag].length > 300) {
             history[user.prtag].shift();
         }
 

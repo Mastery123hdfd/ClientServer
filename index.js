@@ -142,24 +142,13 @@ function ensureAccount(user, pass){
 server.on("connection", socket => {
     console.log("Client connected");
 
-    let monikerSet = false;
     let firstmessage = true;
     let command = false;
     socket.send("Please input your moniker");
  // Decode login info from Account Info
 
     socket.on("message", msg => {
-        if(user.newName){
-          if(!validateRoomName(msg){
-            socket.send("Invalid Moniker");
-            return;
-          } else{
-            user.moniker = msg;
-            user.newName = false;
-            socket.send("Name changed. New name: " + user.moniker);
-            return;
-          }
-        }
+        
         let data = null;
         let raw = msg.toString();
 
@@ -177,16 +166,15 @@ server.on("connection", socket => {
         }
 
         // First message = moniker
-        if (!monikerSet) {
             clients.set(socket, {
-                moniker: msg,
+                moniker: ,
                 admin: false,
                 mod: false,
                 prtag:"main",
                 active: false,
                 loggedIn: false
             });
-            monikerSet = true;
+            
 
             const user = clients.get(socket);
 
@@ -203,19 +191,31 @@ server.on("connection", socket => {
             socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
             return;
         }
+        if(user.newName){
+          if(!validateRoomName(msg){
+            socket.send("Invalid Moniker");
+            return;
+          } else{
+            user.moniker = msg;
+            user.newName = false;
+            socket.send("Name changed. New name: " + user.moniker);
+            return;
+          }
+        }
         const user = clients.get(socket);
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
         if(data && data.type == "sessionrestart"){
           const token = data.token;
-          db.ref("sessions/ " + token).once("value", snap =>{
+          db.ref("sessions/" + token).once("value", snap =>{
             const session = snap.val();
             if (!session){
               socket.send("Invalid Session Token");
               return;
             } else{
-              const user = session.username;
-              const pass = loginfo[user];
+              const username = session.username;
+              const pass = loginfo[username];
+
               user.moniker = username;
               user.loggedIn = true;
 
@@ -252,7 +252,7 @@ server.on("connection", socket => {
           socket.send("Permissions and flags cleared");
         }
         if((msg == "/changename" || msg == "/changemoniker" ) && user.loggedIn){
-            monikerSet = false;
+
             socket.send("Please input your new username");   
             user.newName = true;
             return;
@@ -299,7 +299,7 @@ server.on("connection", socket => {
 
               const token = Math.random().toString(36).slice(2);
               user.sessionToken = token; db.ref("sessions/" + token).set({ 
-                username: user.moniker,
+                username: userin,
                 timestamp: Date.now()
               }); 
               socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));

@@ -167,7 +167,7 @@ server.on("connection", socket => {
 
         // First message = moniker
             clients.set(socket, {
-                moniker: ,
+                moniker: "UNKNOWN (This Account is not Logged In)",
                 admin: false,
                 mod: false,
                 prtag:"main",
@@ -194,6 +194,7 @@ server.on("connection", socket => {
         if(user.newName){
           if(!validateRoomName(msg){
             socket.send("Invalid Moniker");
+            user.newName = false;
             return;
           } else{
             user.moniker = msg;

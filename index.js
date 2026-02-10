@@ -191,7 +191,7 @@ server.on("connection", socket => {
             socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
             return;
         if(user.newName){
-          if(!validateRoomName(msg){
+          if(!validateRoomName(msg)){
             socket.send("Invalid Moniker");
             user.newName = false;
             return;

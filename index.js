@@ -145,7 +145,15 @@ server.on("connection", socket => {
     let firstmessage = true;
     let command = false;
  // Decode login info from Account Info
-    let usernm = "UNKNOWN (Account Not Logged In)"
+    let usernm = "UNKNOWN (Account Not Logged In)";
+  clients.set(socket, {
+                moniker: usernm,
+                admin: false,
+                mod: false,
+                prtag:"main2",
+                active: false,
+                loggedIn: false
+            });
 
     socket.on("message", msg => {
         
@@ -167,14 +175,7 @@ server.on("connection", socket => {
             return;
         }
 
-            clients.set(socket, {
-                moniker: usernm,
-                admin: false,
-                mod: false,
-                prtag:"main2",
-                active: false,
-                loggedIn: false
-            });
+            
             
 
             const user = clients.get(socket);
@@ -247,8 +248,10 @@ server.on("connection", socket => {
           user.loggedIn = false;
           user.mod = false;
           user.admin = false;
-          db.ref("sessions/" + user.sessionToken).remove();
-          user.sessionToken = null;
+          if(user.sessionToken){
+            db.ref("sessions/" + user.sessionToken).remove();
+            user.sessionToken = null;
+          }
           socket.send("Permissions and flags cleared");
         }
         if((msg == "/changename" || msg == "/changemoniker" ) && user.loggedIn){
@@ -382,7 +385,7 @@ server.on("connection", socket => {
                     }
                 }
                 if(msg=="/gethistlength" && user.admin){
-                  ensureRoom(prtag, user, socket);
+                  ensureRoom(user.prtag, user, socket);
                   socket.send(history[user.prtag].length);
                   return;
                 }
@@ -428,10 +431,12 @@ server.on("connection", socket => {
             history[user.prtag].push(taggedMessage);
 
             db.ref("chatlog/" + user.prtag).push({ taggedMessage });
-            for (const [client] of clients) {
-                client.send(taggedMessage);
+            if(cUser.prtag === user.prtag){
+              for (const [client] of clients) {
+                  client.send(taggedMessage);
+              }
             }
-            return;
+          return;
         }
 
         taggedMessage = (JSON.stringify({

@@ -151,7 +151,8 @@ server.on("connection", socket => {
       mod: false,
       prtag:"main2",
       active: false,
-      oggedIn: false
+      loggedIn: false,
+      sessionToken: null
     });
 
     socket.on("message", msg => {
@@ -217,6 +218,7 @@ server.on("connection", socket => {
               } else if (modAdminPassArray.includes(pass)){
                 user.mod = true;
               }
+              user.sessionToken = token;
               console.log("Session restored");
             }
           });
@@ -288,8 +290,10 @@ server.on("connection", socket => {
             user.admin = false; 
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
+
           } else{
             if(loginfo[userin] === passin){
+              user.moniker = userin;
               user.loggedIn = true;
             }
           }
@@ -421,10 +425,8 @@ server.on("connection", socket => {
             history[user.prtag].push(taggedMessage);
 
             db.ref("chatlog/" + user.prtag).push({ taggedMessage });
-            if(cUser.prtag === user.prtag){
-              for (const [client] of clients) {
-                  client.send(taggedMessage);
-              }
+            for (const [client] of clients) {
+                client.send(taggedMessage);
             }
           return;
         }

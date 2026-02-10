@@ -289,6 +289,7 @@ server.on("connection", socket => {
             user.mod = false; 
             user.admin = false; 
             socket.send("Account created. Logged in as normal user.");
+            user.loggedIn = true;
             return;
           } else{
             if(loginfo[userin] === passin){

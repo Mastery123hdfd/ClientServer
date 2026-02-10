@@ -6,6 +6,11 @@ admin.initializeApp({
 });
 const db = admin.database();
 
+function loadSession(token) {
+  return db.ref("sessions/" + token).once("value").then(snap => snap.val());
+}
+
+
 const WebSocket = require("ws");
 
 const port = process.env.PORT || 10000;
@@ -160,7 +165,7 @@ server.on("connection", socket => {
       sessionToken: null
     });
 
-    socket.on("message", msg => {
+    socket.on("message",async msg => {
         
         let data = null;
         let raw = msg.toString();
@@ -204,31 +209,26 @@ server.on("connection", socket => {
         }
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
-        if(data && data.type == "sessionrestart"){
-          const token = data.token;
-          db.ref("sessions/" + token).once("value", snap =>{
-            const session = snap.val();
-            if (!session){
+        if (data && data.type === "sessionrestart") {
+            const token = data.token;
+            const session = await loadSession(token);
+
+            if (!session) {
               socket.send("Invalid Session Token");
               return;
-            } else{
-              const username = session.username;
-              const pass = loginfo[username];
-              user.moniker = username;
-              user.loggedIn = true;
-
-              if(adminArray.some(a => a.pass === pass)){
-                user.admin = true;
-                user.mod = true;
-              } else if (modArray.some(a => a.pass === pass)){
-                user.mod = true;
-              }
-              user.sessionToken = token;
-              console.log("Session restored");
             }
-          });
-          return;
+
+             user.moniker = session.username;
+             user.loggedIn = true;
+             user.admin = !!session.admin;
+            user.mod = !!session.mod;
+            user.sessionToken = token;
+
+            socket.send("Session restored for " + user.moniker);
+             console.log("Session restored for", user.moniker);
+            return;
         }
+
         if(msg=="/help"){
           for(k of cmdliststring){
             socket.send(k);
@@ -305,8 +305,13 @@ server.on("connection", socket => {
             const token = Math.random().toString(36).slice(2);
             user.sessionToken = token; db.ref("sessions/" + token).set({ 
               username: userin,
+              admin: !!user.admin,
+              mod: !!user.mod,
               timestamp: Date.now()
-            }); 
+            }).then(() => {
+                console.log("Session token stored in Firebase for user:", userin);
+                 socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+            });
             socket.send(" Session token created");
             socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
               

@@ -176,8 +176,6 @@ server.on("connection", socket => {
             
 
             const user = clients.get(socket);
-
-            socket.send(`Welcome, ${msg}!`);
             user.active = true;
             if(firstmessage){
                 ensureRoom(user.prtag,user,socket);

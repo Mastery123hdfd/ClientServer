@@ -500,7 +500,7 @@ server.on("connection", socket => {
         socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
     });
     socket.send(" Session token created");
-    ocket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+    socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
 
     socket.on("close", () => {
         const user = clients.get(socket);

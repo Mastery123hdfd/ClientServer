@@ -61,6 +61,10 @@ let modAdminPassArray = ["30412", "lmrr1ls"];
 let AdminPassArray = ["2249"];
 let regularPass = ["101"];
 
+let modArray =[];
+let adminArray =[];
+let regArray =[];
+
 
 history["main2"] = [];
 
@@ -120,8 +124,9 @@ db.ref("logindata/accountdata").once("value", snapshot => {
     aclist.push(new Account(a.user, a.pass, a.admin, a.mod));
   });
   for (const a of aclist) {
-    if (a.mod) modAdminPassArray.push(a.pass);
-    if (a.admin) AdminPassArray.push(a.pass);
+    if (a.mod) modArray.push(a);
+    if (a.admin) adminArray.push(a);
+    regArray.push(a);
     loginfo[a.user] = a.pass; 
   } 
   console.log("Login accounts loaded."); 
@@ -212,10 +217,10 @@ server.on("connection", socket => {
               user.moniker = username;
               user.loggedIn = true;
 
-              if(AdminPassArray.includes(pass)){
+              if(adminArray.some(a => a.pass === pass)){
                 user.admin = true;
                 user.mod = true;
-              } else if (modAdminPassArray.includes(pass)){
+              } else if (modArray.some(a => a.pass === pass)){
                 user.mod = true;
               }
               user.sessionToken = token;
@@ -305,16 +310,16 @@ server.on("connection", socket => {
             socket.send(" Session token created");
             socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
               
-            if(modAdminPassArray.includes(passin)){
+            if(modArray.some(a => a.pass === passin)){
               user.mod = true;
               socket.send("Socket upgraded to Moderator. Welcome, mod.");
               return;
-            } else if(AdminPassArray.includes(passin)){
+            } else if(adminArray.some(a => a.pass === passin)){
               user.mod = true;
               user.admin = true;
               socket.send("Welcome Administrator. Socket upgraded to Admin status.");
               return;
-            } else if(regularPass.includes(passin)){
+            } else if(regArray.some(a => a.pass === passin)){
               user.mod = false;
               user.admin = false;
               socket.send("Normal user dected.");
@@ -409,11 +414,26 @@ server.on("connection", socket => {
                   }
                   return;
                 }
-                if(msg == "/giveMod" && user.admin){
+                if(msg == "/giveSelfMod" && user.admin){
                   user.mod = true;
                 }
+                if(msg =="/giveOtherAdmin" && user.admin){
+                    socket.send("Please input the username of the user you wish to give admin to");
+                    user.awaitingAdminTarget = msg;
+                    return;
+                }
+                if(user.awaitingAdminTarget){
+                    clients.forEach((cUser, client) => {
+                        if(cUser.moniker === user.awaitingAdminTarget){
+                            cUser.mod = true;
+                            client.send("You have been given mod privileges by " + user.moniker);
+                            socket.send("Mod privileges given to " + user.awaitingAdminTarget);
+                        }
+                    });
+                }
                 
-                if(msg =="/cmdoff"){
+                
+                if(msg == "/cmdoff"){
                     socket.send("Command Mode Deactivated");
                     command = false;
                     return;

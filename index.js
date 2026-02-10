@@ -27,20 +27,7 @@ function validateRoomName(name) {
     return /^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 50;
 }
 
-//load from firebase
-db.ref("chatlog").once("value", snapshot => {
-     snapshot.forEach(roomSnap => {
-         const room = roomSnap.key;
-          history[room] = [];
-          roomSnap.forEach(msgSnap => {
-             const entry = msgSnap.val();
-              if (entry && entry.taggedMessage) {
-                 history[room].push(entry.taggedMessage); 
-                } 
-            }); 
-        }); 
-    console.log("History loaded from Firebase"); 
-});
+
 
 
 //load from firebase
@@ -103,63 +90,76 @@ class Account{
     this.admin = admin;
   }
   verify(userin, passin){
-    if(user == userin && pass == passin){
+    if(this.user == userin && this.pass == passin){
       return true;
     } else{
       return false;
     }
   }
   getuser(){
-    return user;
+    return this.user;
   }
 }
 
 let aclist = [];
 
-/*function encodeLoginData(a, db){
-  if(validateRoomName(a.getuser()))
-    db.ref("logindata/" + "accountdata/").push(a);
+function encodeLoginData(a, db){
+  if (validateRoomName(a.user)){
+    db.ref("logindata/accountdata").push({
+      user: a.user, 
+      pass: a.pass, 
+      admin: a.admin, 
+      mod: a.mod 
+    }); 
   }
 }
 
-function getLoginData(){
-  let b = [];
-  const accountlist = db.ref("logindata/" + "accountdata/");
-  for( a of accountlist){
-    b.push(a);
-  }
-  return b;
-}*/
+db.ref("logindata/accountdata").once("value", snapshot => {
+  snapshot.forEach(child => {
+    const a = child.val();
+    aclist.push(new Account(a.user, a.pass, a.admin, a.mod));
+  });
+  for (const a of aclist) {
+    if (a.mod) modAdminPassArray.push(a.pass);
+    if (a.admin) AdminPassArray.push(a.pass);
+    loginfo[a.user] = a.pass; 
+  } 
+  console.log("Login accounts loaded."); 
+});
 
+function ensureAccount(user, pass){
+  if (!validateRoomName(user)) return false;
+  if(loginfo[user]){
+    return false;
+  } else{
+    const a = new Account(user, pass, false, false);
+    loginfo[user]= pass;
+    encodeLoginData(a, db);
+    return true;
+  }
+}
 
 server.on("connection", socket => {
     console.log("Client connected");
 
     let monikerSet = false;
     let firstmessage = true;
-    let loginmsg = false;
-    let passmsg = false;
-    let loginstring = "";
     let command = false;
-    let passwordstring="";
     socket.send("Please input your moniker");
  // Decode login info from Account Info
-    for(a in aclist){
-      if(a.mod){
-        modAdminPassArray.push(a.pass); 
-      } else if (a.admin){
-        AdminPassAray.push(a.pass);
-      } else{
-        regularPass.push(a.pass);
-      }
-      loginfo[a.user] = a.pass;
-    }
 
     socket.on("message", msg => {
-    
-    
-
-        
+        if(user.newName){
+          if(!validateRoomName(msg){
+            socket.send("Invalid Moniker");
+            return;
+          } else{
+            user.moniker = msg;
+            user.newName = false;
+            socket.send("Name changed. New name: " + user.moniker);
+            return;
+          }
+        }
         let data = null;
         let raw = msg.toString();
 
@@ -183,7 +183,8 @@ server.on("connection", socket => {
                 admin: false,
                 mod: false,
                 prtag:"main",
-                active: false
+                active: false,
+                loggedIn: false
             });
             monikerSet = true;
 
@@ -205,6 +206,30 @@ server.on("connection", socket => {
         const user = clients.get(socket);
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
+        if(data && data.type == "sessionrestart"){
+          const token = data.token;
+          db.ref("sessions/ " + token).once("value", snap =>{
+            const session = snap.val();
+            if (!session){
+              socket.send("Invalid Session Token");
+              return;
+            } else{
+              const user = session.username;
+              const pass = loginfo[user];
+              user.moniker = username;
+              user.loggedIn = true;
+
+              if(AdminPassArray.includes(pass)){
+                user.admin = true;
+                user.mod = true;
+              } else if (modAdminPassArray.includes(pass)){
+                user.mod = true;
+              }
+              console.log("Session restored");
+            }
+          });
+          return;
+        }
         if(msg=="/help"){
           for(k of cmdliststring){
             socket.send(k);
@@ -218,9 +243,18 @@ server.on("connection", socket => {
           socket.send("Use the login info given to you by a moderator or admin to login.");
           socket.send("NOTE: This system is temporary, a better login system is currently being developed.");
         }
-        if(msg == "/changename" || msg == "/changemoniker"){
+        if(msg=="/logout"){
+          user.loggedIn = false;
+          user.mod = false;
+          user.admin = false;
+          db.ref("sessions/" + user.sessionToken).remove();
+          user.sessionToken = null;
+          socket.send("Permissions and flags cleared");
+        }
+        if((msg == "/changename" || msg == "/changemoniker" ) && user.loggedIn){
             monikerSet = false;
             socket.send("Please input your new username");   
+            user.newName = true;
             return;
         }
         if (data && data.type === "changePrTag") {
@@ -245,11 +279,55 @@ server.on("connection", socket => {
 
             return;
         }
-      if (data && data.type == "login){
+      if (data && data.type == "login"){
+        if(user.loggedIn){
+          socket.send("Error: User already logged in");
+          return;
+        }
           const userin = data.v1;
           const passin = data.v2;
-          
+          const acnew = ensureAccount(userin, passin);
+          if(acnew){
+            user.moniker = userin;
+            user.mod = false; 
+            user.admin = false; 
+            socket.send("Account created. Logged in as normal user.");
+            return;
+          } else{
+            if(loginfo[userin] === passin){
+              user.loggedIn = true;
+
+              const token = Math.random().toString(36).slice(2);
+              user.sessionToken = token; db.ref("sessions/" + token).set({ 
+                username: user.moniker,
+                timestamp: Date.now()
+              }); 
+              socket.send(JSON.stringify({ type: "sessionToken", token }));
+              
+              if(modAdminPassArray.includes(passin)){
+                user.mod = true;
+                socket.send("Socket upgraded to Moderator. Welcome, mod.");
+                return;
+              } else if(AdminPassArray.includes(passin)){
+                user.mod = true;
+                user.admin = true;
+                socket.send("Welcome Administrator. Socket upgraded to Admin status.");
+                return;
+              } else  {
+                user.mod = false;
+                user.admin = false;
+                socket.send("Normal user dected.");
+                return;
+              }
+            } else{
+              socket.send("Incorrect sign-in data");
+              return;
+            }
+            
+          }
+        return;
       }
+
 
         if(msg == "/getplayers"){
           for (const [client, cUser] of clients) {
@@ -258,54 +336,6 @@ server.on("connection", socket => {
             }
           }
           return;
-        }
-        if(passmsg){
-            passwordstring = msg;
-            const user = clients.get(socket);
-            if (loginstring in loginfo && loginfo[loginstring] == passwordstring) {
-                if(passwordstring == testPass){
-                    socket.send("Test successful, client not marked");
-                }
-                
-                else if(modAdminPassArray.includes(passwordstring)){
-                    socket.send("Account Upgraded to Moderator Status. NOTE: Changing monikers will revoke permissions.");
-                    user.mod = true;
-                    //make mod
-                }
-                else if(passwordstring == adminPass){
-                    socket.send("Welcome, admin. Socket elevated to Admin levels. NOTE: Changing monikers will revoke permissions.");
-                    user.mod = true;
-                    user.admin = true;
-                    //make mod AND admin
-                }
-                else{
-                    socket.send("Incorrect Credentials.");
-                }
-                passmsg = false;
-                return;
-            } else{
-                passmsg = false;
-                socket.send("Incorrect Password");
-                return;
-            }
-        }
-        if(loginmsg){
-            loginstring = msg;
-            socket.send("Received login user");
-            if(loginstring in loginfo){
-                passmsg = true;
-                loginmsg = false;
-                return;
-            }else{
-                socket.send("Invalid Login Info");
-            }
-            loginmsg = false;
-            return;
-        }
-        if(msg == "/login"){
-            socket.send("Please input your login Username");
-            loginmsg = true;
-            return;
         }
         if(msg == "/cmd"){
                 if(user.mod || user.admin){
@@ -359,7 +389,7 @@ server.on("connection", socket => {
                     socket.send("Room 'main' cannot be removed");
                     return;
                   } else{
-                    previoustag = user.prtag;
+                    let previoustag = user.prtag;
                     user.prtag = "main";
                     socket.send(JSON.stringify({ type: "clearHistory" }));
                     for (const line of history["main"]) {

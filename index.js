@@ -202,7 +202,6 @@ server.on("connection", socket => {
             return;
           }
         }
-        const user = clients.get(socket);
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
         if(data && data.type == "sessionrestart"){

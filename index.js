@@ -315,21 +315,11 @@ server.on("connection", socket => {
             socket.send(" Session token created");
             socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
               
-            if(modArray.some(a => a.pass === passin)){
-              user.mod = true;
-              socket.send("Socket upgraded to Moderator. Welcome, mod.");
-              return;
-            } else if(adminArray.some(a => a.pass === passin)){
-              user.mod = true;
-              user.admin = true;
-              socket.send("Welcome Administrator. Socket upgraded to Admin status.");
-              return;
-            } else if(regArray.some(a => a.pass === passin)){
-              user.mod = false;
-              user.admin = false;
-              socket.send("Normal user dected.");
-              return;
-            } else{
+            const acc = aclist.find(a => a.user === userin && a.pass === passin);
+            if (acc) {
+                user.admin = acc.admin;
+                user.mod = acc.mod;
+            }else{
               socket.send("Incorrect sign-in data");
               return;
             }

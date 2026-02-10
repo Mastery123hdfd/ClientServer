@@ -419,7 +419,12 @@ server.on("connection", socket => {
                 if(msg == "/giveSelfMod" && user.admin){
                   user.mod = true;
                 }
-                if(msg =="/giveOtherAdmin" && user.admin){
+                if(msg =="/giveOtherMod" && user.admin){
+                    socket.send("Please input the username of the user you wish to give mod privileges to");
+                    user.awaitingModTarget = msg;
+                    return;
+                }
+                if(msg== "/giveOtherAdmin" && user.admin){
                     socket.send("Please input the username of the user you wish to give admin to");
                     user.awaitingAdminTarget = msg;
                     return;
@@ -427,9 +432,19 @@ server.on("connection", socket => {
                 if(user.awaitingAdminTarget){
                     clients.forEach((cUser, client) => {
                         if(cUser.moniker === user.awaitingAdminTarget){
+                            cUser.admin = true;
+                            cUser.mod = true;
+                            client.send("You have been given admin privileges by " + user.moniker);
+                            socket.send("Admin privileges given to " + user.awaitingAdminTarget);
+                        }
+                    });
+                }
+                if(user.awaitingModTarget){
+                    clients.forEach((cUser, client) => {
+                        if(cUser.moniker === user.awaitingModTarget){
                             cUser.mod = true;
                             client.send("You have been given mod privileges by " + user.moniker);
-                            socket.send("Mod privileges given to " + user.awaitingAdminTarget);
+                            socket.send("Mod privileges given to " + user.awaitingModTarget);
                         }
                     });
                 }

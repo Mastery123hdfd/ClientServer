@@ -165,7 +165,6 @@ server.on("connection", socket => {
             return;
         }
 
-        // First message = moniker
             clients.set(socket, {
                 moniker: "UNKNOWN (This Account is not Logged In)",
                 admin: false,
@@ -290,41 +289,39 @@ server.on("connection", socket => {
             user.admin = false; 
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
-            return;
           } else{
             if(loginfo[userin] === passin){
               user.loggedIn = true;
-
-              const token = Math.random().toString(36).slice(2);
-              user.sessionToken = token; db.ref("sessions/" + token).set({ 
-                username: userin,
-                timestamp: Date.now()
-              }); 
-              socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+            }
+          }
+            const token = Math.random().toString(36).slice(2);
+            user.sessionToken = token; db.ref("sessions/" + token).set({ 
+              username: userin,
+              timestamp: Date.now()
+            }); 
+            socket.send(" Session token created");
+            socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
               
-              if(modAdminPassArray.includes(passin)){
-                user.mod = true;
-                socket.send("Socket upgraded to Moderator. Welcome, mod.");
-                return;
-              } else if(AdminPassArray.includes(passin)){
-                user.mod = true;
-                user.admin = true;
-                socket.send("Welcome Administrator. Socket upgraded to Admin status.");
-                return;
-              } else  {
-                user.mod = false;
-                user.admin = false;
-                socket.send("Normal user dected.");
-                return;
-              }
+            if(modAdminPassArray.includes(passin)){
+              user.mod = true;
+              socket.send("Socket upgraded to Moderator. Welcome, mod.");
+              return;
+            } else if(AdminPassArray.includes(passin)){
+              user.mod = true;
+              user.admin = true;
+              socket.send("Welcome Administrator. Socket upgraded to Admin status.");
+              return;
+            } else if(regularPass.includes(passin)){
+              user.mod = false;
+              user.admin = false;
+              socket.send("Normal user dected.");
+              return;
             } else{
               socket.send("Incorrect sign-in data");
               return;
             }
-            
+            return;
           }
-        return;
-      }
 
 
         if(msg == "/getplayers"){

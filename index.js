@@ -144,7 +144,6 @@ server.on("connection", socket => {
 
     let firstmessage = true;
     let command = false;
-    socket.send("Please input your moniker");
  // Decode login info from Account Info
 
     socket.on("message", msg => {

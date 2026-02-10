@@ -164,6 +164,7 @@ server.on("connection", socket => {
     });
 
     socket.on("message",async msg => {
+        const user = clients.get(socket);
         ensureRoom(user.prtag, user, socket);
         let data = null;
         let raw = msg.toString();
@@ -182,7 +183,7 @@ server.on("connection", socket => {
         if(msg == ""){
             return;
         }
-        const user = clients.get(socket);
+        
         user.active = true;
         if(firstmessage){
           ensureRoom(user.prtag,user,socket);
@@ -222,7 +223,7 @@ server.on("connection", socket => {
             user.mod = !!session.mod;
             user.sessionToken = token;
             if (!history[user.prtag]) history[user.prtag] = [];
-            
+
             socket.send("Session restored for " + user.moniker);
              console.log("Session restored for", user.moniker);
             return;

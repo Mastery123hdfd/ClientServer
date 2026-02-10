@@ -50,6 +50,9 @@ db.ref("chatlog").once("value", snapshot => {
     console.log("History loaded from Firebase"); 
 });
 
+if (!history["main2"]) history["main2"] = [];
+
+
 const cmdliststring = ["====Command List====", "/help: Displays this menu", "/cmd: Activates command mode", "/getprlist: Gets a list of all private rooms; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/strikemsg: Removes a message from the chat history and clears it from everyone's logs; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/clearhist: Clears the entire history of the current chat room; ADMIN ONLY; COMMAND MODE REQUIRED", "/getplayers: Gets a list of all users currently online; BROKEN", "/login: Starts the login process", "/changename: Changes your name", "/gethistlength: Gets the length of the current chat history; ADMIN ONLY; COMMAND MODE REQUIRED", "/loginhelp: Gives you instructions on how to login"]; 
 
 const loginfo = {};
@@ -60,11 +63,6 @@ loginfo["modOliverLimb20213"] = "30412";
 loginfo["testModerator3013"] = "lmrr1ls";
 //Hard-coded accounts that are embedded into the server.
 
-const testPass = "101";
-const adminPass = "2249";
-let modAdminPassArray = ["30412", "lmrr1ls"];
-let AdminPassArray = ["2249"];
-let regularPass = ["101"];
 
 let modArray =[];
 let adminArray =[];
@@ -166,7 +164,7 @@ server.on("connection", socket => {
     });
 
     socket.on("message",async msg => {
-        
+        ensureRoom(user.prtag, user, socket);
         let data = null;
         let raw = msg.toString();
         
@@ -223,7 +221,8 @@ server.on("connection", socket => {
              user.admin = !!session.admin;
             user.mod = !!session.mod;
             user.sessionToken = token;
-
+            if (!history[user.prtag]) history[user.prtag] = [];
+            
             socket.send("Session restored for " + user.moniker);
              console.log("Session restored for", user.moniker);
             return;

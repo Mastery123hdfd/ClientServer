@@ -74,6 +74,9 @@ let regArray =[];
 
 history["main"] = [];
 
+let lengthMap = {};
+
+
 function ensureIsArray(tag){
   if (!Array.isArray(history[tag])) { history[tag] = []; }
 }
@@ -407,7 +410,7 @@ server.on("connection", socket => {
                     history[user.prtag] = []; 
                   }
                   if(history[user.prtag].length){
-                    socket.send(history[user.prtag].length);
+                    socket.send(history[user.prtag].length());
                   } else{
                     socket.send("Error, history is not an array");
                   }
@@ -488,7 +491,6 @@ server.on("connection", socket => {
                 }
             }
         if(taggedMessage) {
-        // send/broadcast this and return early
             ensureRoom(user.prtag,user,socket);
             history[user.prtag].push(taggedMessage);
 
@@ -509,14 +511,15 @@ server.on("connection", socket => {
 
         console.log("Broadcast:", taggedString);
 
-        // Add to history (max 200)
-
         ensureRoom(user.prtag,user,socket);
-
       
         history[user.prtag].push(taggedMessage);
+        if(!lengthMap[user.prtag]){
+          lengthMap[user.prtag] = 0;
+        }
+        lengthMap[user.prtag] = lengthMap[user.prtag]+1;
 
-        if (history[user.prtag].length > 300) {
+        if (lengthMap[user.prtag] > 300) {
             history[user.prtag].shift();
         }
 

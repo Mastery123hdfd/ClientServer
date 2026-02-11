@@ -78,7 +78,7 @@ function ensureIsArray(tag){
 }
 
 function ensureRoom(tag, user, socket) {
-    if (!history[tag]) {
+    if (!Array.isArray(history[tag])) {
         if(user.mod || user.admin){
             history[tag] = [];
             return true;

@@ -24,8 +24,6 @@ const clients = new Map();
 // Proper history buffer
 let history = {};
 
-let lengthMap = {};
-
 function validateRoomName(name) {
     // Only allow alphanumeric, underscores, and hyphens
     // Prevents path traversal attempts like "../" or "..\\"
@@ -48,10 +46,6 @@ db.ref("chatlog").once("value", snapshot => {
                 } 
             }); 
         }); 
-        lengthMap[room].push(history[room].length);
-        if (!history["main"]) {
-            history["main"] = [];
-        }
     console.log("History loaded from Firebase"); 
 });
 
@@ -406,17 +400,19 @@ server.on("connection", socket => {
                         socket.send(p);
                     }
                 }
-                if(msg=="/gethistlength" && user.admin){
-                  ensureRoom(user.prtag, user, socket);
-                  if (!Array.isArray(history[user.prtag])) {
-                    history[user.prtag] = []; 
-                  }
-                  if(history[user.prtag].length){
-                    socket.send(history[user.prtag].length);
-                  } else{
-                    socket.send("Error, history is not an array");
-                  }
-                  return;
+                if (msg === "/gethistlength" && user.admin {
+                  console.log("=== /gethistlength DEBUG START ===");
+                 console.log("user.prtag:",user.prtag);
+                  console.log("history keys:",Object.keys(history)); 
+                  console.log("history[user.prtag]:", history[user.prtag]);
+                  console.log("type:", typeof history[user.prtag]);
+                  console.log("isArray:", Array.isArray(history[user.prtag]));
+                  console.log("=== /gethistlength DEBUG END ===");
+                  if (!Array.isArray(history[user.prtag])){
+                    socket.send("Server error: history for room is not an array.");
+                    return; 
+                  } socket.send(String(history[user.prtag].length));
+                  return; 
                 }
                 if(msg=="/delroom" && user.admin){
                   if(user.prtag == "main"){

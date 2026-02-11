@@ -1,3 +1,10 @@
+process.stdout.write = (function(write) {
+  return function(string, encoding, fd) {
+    write.apply(process.stdout, arguments);
+    try { fs.fsyncSync(1); } catch(e) {}
+  };
+})(process.stdout.write);
+
 admin = require("firebase-admin");
 
 process.on("uncaughtException", err => {

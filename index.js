@@ -47,8 +47,8 @@ db.ref("chatlog").once("value", snapshot => {
                 } 
             }); 
         }); 
-        if (!history["main2"]) {
-            history["main2"] = [];
+        if (!history["main"]) {
+            history["main"] = [];
         }
     console.log("History loaded from Firebase"); 
 });
@@ -72,7 +72,7 @@ let adminArray =[];
 let regArray =[];
 
 
-history["main2"] = [];
+history["main"] = [];
 
 
 function ensureRoom(tag, user, socket) {
@@ -82,7 +82,7 @@ function ensureRoom(tag, user, socket) {
             return true;
         }else{
             socket.send("Regular Users cannot create their own rooms. Open rooms created by admin: ler, open1, open2. Try them out or use the room code given to you by a mod.");
-            for (const line of history["main2"]) {
+            for (const line of history["main"]) {
                 socket.send(line);
             }
             return false;
@@ -160,7 +160,7 @@ server.on("connection", socket => {
       moniker: "UNKNOWN",
       admin: false,
       mod: false,
-      prtag:"main2",
+      prtag:"main",
       active: false,
       loggedIn: false,
       sessionToken: null
@@ -404,19 +404,19 @@ server.on("connection", socket => {
                   return;
                 }
                 if(msg=="/delroom" && user.admin){
-                  if(user.prtag == "main2"){
+                  if(user.prtag == "main"){
                     socket.send("Room 'main' cannot be removed");
                     return;
                   } else{
                     let previoustag = user.prtag;
-                    user.prtag = "main2";
+                    user.prtag = "main";
                     socket.send(JSON.stringify({ type: "clearHistory" }));
-                    for (const line of history["main2"]) {
+                    for (const line of history["main"]) {
                        socket.send(line);
                     }
                     for(const [client, cUser] of clients){
                       if(cUser.prtag == previoustag){
-                        cUser.prtag = "main2";
+                        cUser.prtag = "main";
                       }
                     }
                     db.ref("chatlog/" + previoustag).remove();

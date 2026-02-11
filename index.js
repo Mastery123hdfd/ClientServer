@@ -450,7 +450,7 @@ server.on("connection", socket => {
                 }
                 if(user.awaitingAdminTarget){
                     clients.forEach((cUser, client) => {
-                        if(cUser.moniker === user.awaitingAdminTarget){
+                        if(cUser.moniker === msg){
                             cUser.admin = true;
                             cUser.mod = true;
                             client.send("You have been given admin privileges by " + user.moniker);
@@ -461,7 +461,7 @@ server.on("connection", socket => {
                 }
                 if(user.awaitingModTarget){
                     clients.forEach((cUser, client) => {
-                        if(cUser.moniker === user.awaitingModTarget){
+                        if(cUser.moniker === msg){
                             cUser.mod = true;
                             client.send("You have been given mod privileges by " + user.moniker);
                             socket.send("Mod privileges given to " + user.awaitingModTarget);

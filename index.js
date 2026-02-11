@@ -126,7 +126,7 @@ function encodeLoginData(a, db){
     }); 
   }
 }
-function updateLoginPermData(a, db){
+function updateLoginPermData(a, db,token){
   if(validateRoomName(a.user)){
     db.ref("logindata/accountdata").once("value", snapshot=>{
       snapshot.forEach(child => {
@@ -140,6 +140,22 @@ function updateLoginPermData(a, db){
       });
     });
   }
+}
+function updateSession(a, db, token){
+ if(validateRoomName(a.user)){
+  const snapshot = await db.ref("sessions/" + token).once("value");
+  if(snapshot.exists){
+   const val = snapshot.val();
+   snapshot.ref.update({
+    mod: a.mod,
+    admin: a.admin,
+    disp: a.moniker
+   });
+  } else{
+   console.log("Erorr! Session not found!);
+   return;
+  }
+ }
 }
 
 aclist = [];
@@ -175,7 +191,7 @@ function ensureAccount(user, pass){
 
 server.on("connection", socket => {
     console.log("Client connected");
-
+    let token = null;
     let firstmessage = true;
     let command = false;
  // Decode login info from Account Info
@@ -374,7 +390,23 @@ server.on("connection", socket => {
           }
             
               
-            const acc = aclist.find(a => a.user === userin && a.pass === passin);
+           const snapshot = await db.ref("logindata/accountdata").once("value");
+
+           let acc = null;
+           snapshot.forEach(child => {
+              const val = child.val();
+              if (val.user === userin && val.pass === passin) {
+                acc = val;
+              }
+           });
+           if (!acc) {
+               socket.send("Incorrect sign-in data");
+               return;
+           }
+           user.admin = !!acc.admin;
+           user.mod = !!acc.mod;
+           user.moniker = acc.disp || userin;
+
             if (acc) {
                 user.admin = acc.admin;
                 user.mod = acc.mod;
@@ -389,9 +421,9 @@ server.on("connection", socket => {
               return;
             }
             if(user.sessionToken == null){
-            const token = Math.random().toString(36).slice(2);
+            token = Math.random().toString(36).slice(2);
             user.sessionToken = token; db.ref("sessions/" + token).set({ 
-                username: user.moniker,
+                username: user.username,
                 admin: !!user.admin,
                 mod: !!user.mod,
                 timestamp: Date.now(),
@@ -505,6 +537,7 @@ server.on("connection", socket => {
                   user.mod = true;
                   let a = new Account(user.username, user.pass, true, true, user.moniker);
                   updateLoginPermData(a, db);
+                  updateSession(a,db,token);
                 }
                 if(msg =="/giveOtherMod" && user.admin){
                     socket.send("Please input the username of the user you wish to give mod privileges to");
@@ -528,6 +561,7 @@ server.on("connection", socket => {
                             client.send("1");
                             socket.send("0");
                             updateLoginPermData(a, db);
+                            updateSession(a,db,token);
                         }
                     });
                 }
@@ -540,6 +574,7 @@ server.on("connection", socket => {
                             user.awaitingModTarget = null;
                             let a = new Account(cUser.username, cUser.pass, cUser.admin, true, cUser.moniker);
                             updateLoginPermData(a, db);
+                           updateSession(a,db,token);
                         }
                     });
                 }

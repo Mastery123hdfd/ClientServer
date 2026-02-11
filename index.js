@@ -94,7 +94,7 @@ function ensureRoom(tag, user, socket) {
 }
 
 class Account{
-  constructor(user, pass, admin, mod){
+  constructor(user, pass, admin, mod, disp){
     this.user = user;
     this.pass = pass;
     this.mod = mod;
@@ -124,6 +124,18 @@ function encodeLoginData(a, db){
       mod: a.mod,
       disp: a.disp
     }); 
+  }
+}
+function updateLoginPermData(a, db){
+  if(validateRoomName(a.user)){
+    db.ref("logindata/accountdata").once("value", snapshot=>{
+      snapshot.forEach(child => {
+        if(child.user === a.user && child.pass === a.pass){
+          child.mod = a.mod;
+          child.admin = a.admin;
+        }
+      });
+    });
   }
 }
 
@@ -408,11 +420,11 @@ server.on("connection", socket => {
                     }
                 }
                 if (msg === "/gethistlength" && user.admin) {
-                  socket.send("=== /gethistlength DEBUG START ===");
+                  /*socket.send("=== /gethistlength DEBUG START ===");
                   socket.send("user.prtag:" + user.prtag);
                   socket.send("type:" + typeof history[user.prtag]);
                   socket.send("isArray:" + Array.isArray(history[user.prtag]));
-                  socket.send("=== /gethistlength DEBUG END ===");
+                  socket.send("=== /gethistlength DEBUG END ===");*/
                   socket.send("Length: " + history[user.prtag].length);
                   return; 
                 }
@@ -450,6 +462,8 @@ server.on("connection", socket => {
                 }
                 if(msg == "/giveSelfMod" && user.admin){
                   user.mod = true;
+                  let a = new Account(user.user, user.pass, true, true, user.moniker);
+                  updateLoginPermData(a, db);
                 }
                 if(msg =="/giveOtherMod" && user.admin){
                     socket.send("Please input the username of the user you wish to give mod privileges to");
@@ -469,6 +483,8 @@ server.on("connection", socket => {
                             client.send("You have been given admin privileges by " + user.moniker);
                             socket.send("Admin privileges given to " + msg);
                             user.awaitingAdminTarget = null;
+                            let a = new Account(cUser.user, cUser.pass, true, true, cUser.moniker);
+                            updateLoginPermData(a, db);
                         }
                     });
                 }
@@ -479,6 +495,8 @@ server.on("connection", socket => {
                             client.send("You have been given mod privileges by " + user.moniker);
                             socket.send("Mod privileges given to " + msg);
                             user.awaitingModTarget = null;
+                            let a = new Account(cUser.user, cUser.pass, true, cUser.admin, cUser.moniker);
+                            updateLoginPermData(a, db);
                         }
                     });
                 }

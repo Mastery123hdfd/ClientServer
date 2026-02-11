@@ -399,13 +399,13 @@ server.on("connection", socket => {
                     }
                 }
                 if (msg === "/gethistlength" && user.admin) {
-                  console.log("=== /gethistlength DEBUG START ===");
-                  console.log("user.prtag:",user.prtag);
-                  console.log("history keys:",Object.keys(history)); 
-                  console.log("history[user.prtag]:", history[user.prtag]);
-                  console.log("type:", typeof history[user.prtag]);
-                  console.log("isArray:", Array.isArray(history[user.prtag]));
-                  console.log("=== /gethistlength DEBUG END ===");
+                  socket.send("=== /gethistlength DEBUG START ===");
+                  socket.send("user.prtag:",user.prtag);
+                  socket.send("history keys:",Object.keys(history)); 
+                  socket.send("history[user.prtag]:", history[user.prtag]);
+                  socket.send("type:", typeof history[user.prtag]);
+                  socket.send("isArray:", Array.isArray(history[user.prtag]));
+                  socket.send("=== /gethistlength DEBUG END ===");
                   if (!Array.isArray(history[user.prtag])){
                     socket.send("Server error: history for room is not an array.");
                     return; 

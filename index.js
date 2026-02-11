@@ -324,7 +324,7 @@ server.on("connection", socket => {
               socket.send("Incorrect sign-in data");
               return;
             }
-            if(user.sessionToken != null){
+            if(user.sessionToken == null){
             const token = Math.random().toString(36).slice(2);
             user.sessionToken = token; db.ref("sessions/" + token).set({ 
                 username: user.moniker,

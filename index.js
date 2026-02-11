@@ -404,7 +404,11 @@ server.on("connection", socket => {
                 if(msg=="/gethistlength" && user.admin){
                   ensureRoom(user.prtag, user, socket);
                   ensureIsArray(user.prtag);
-                  socket.send(history[user.prtag].length);
+                  if(history[user.prtag].length){
+                    socket.send(history[user.prtag].length);
+                  } else{
+                    socket.send("Error, history is not an array");
+                  }
                   return;
                 }
                 if(msg=="/delroom" && user.admin){

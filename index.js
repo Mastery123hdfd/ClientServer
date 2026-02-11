@@ -340,7 +340,7 @@ server.on("connection", socket => {
             }
             return;
           }
-      if(user.loggedIn = false){
+      if(user.loggedIn == false){
             socket.send("Login required; create an account or log in to chat.");
             return;
         }

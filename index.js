@@ -62,6 +62,7 @@ loginfo["testUser1"] ="101";
 //Hard-coded accounts that are embedded into the server.
 
 
+
 let modArray =[];
 let adminArray =[];
 let regArray =[];
@@ -149,7 +150,7 @@ async function updateSession(a, db, token){
    snapshot.ref.update({
     mod: a.mod,
     admin: a.admin,
-    disp: a.moniker
+   disp: a.disp
    });
   } else{
    console.log("Erorr! Session not found!");
@@ -258,7 +259,9 @@ server.on("connection", socket => {
               });
             });
            let a = new Account(user.username, user.pass, user.admin, user.mod, user.moniker);
-           updateSession(a,db,token);
+           if(!user.sessionToken){
+            updateSession(a,db,token);
+           }
             return;
           }
         }
@@ -273,7 +276,7 @@ server.on("connection", socket => {
               return;
             }
 
-             user.moniker = session.username;
+             user.moniker = session.disp || session.username;
              user.loggedIn = true;
              user.admin = !!session.admin;
             user.mod = !!session.mod;
@@ -352,7 +355,7 @@ server.on("connection", socket => {
               
               snapshot.forEach(child => {
                 const val = child.val();
-                if(val.user == userin && val.pass == passin){
+                if(val.user == userin){
                   k = val.disp;
                 }
               });

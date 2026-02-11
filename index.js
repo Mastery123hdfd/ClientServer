@@ -403,7 +403,9 @@ server.on("connection", socket => {
                 }
                 if(msg=="/gethistlength" && user.admin){
                   ensureRoom(user.prtag, user, socket);
-                  ensureIsArray(user.prtag);
+                  if (!Array.isArray(history[user.prtag])) {
+                    history[user.prtag] = []; 
+                  }
                   if(history[user.prtag].length){
                     socket.send(history[user.prtag].length);
                   } else{

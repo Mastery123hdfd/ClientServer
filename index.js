@@ -499,7 +499,7 @@ server.on("connection", socket => {
             }
         }
 
-    });
+    };
 
     const token = Math.random().toString(36).slice(2);
     user.sessionToken = token; db.ref("sessions/" + token).set({ 
@@ -516,8 +516,9 @@ server.on("connection", socket => {
 
     socket.on("close", () => {
         const user = clients.get(socket);
-        const moniker = user ? user.moniker : "Anonymous";
-        console.log(`Client disconnected: ${moniker}`);
-        clients.delete(socket);
+            const moniker = user ? user.moniker : "Anonymous";
+            console.log(`Client disconnected: ${moniker}`);
+            clients.delete(socket);
+        });
     });
 });

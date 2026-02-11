@@ -1,4 +1,13 @@
- admin = require("firebase-admin");
+admin = require("firebase-admin");
+
+process.on("uncaughtException", err => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", err => {
+  console.error("UNHANDLED REJECTION:", err);
+});
+
 
 admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
@@ -216,9 +225,9 @@ server.on("connection", socket => {
     const user = clients.get(socket);
     ensureRoom(user.prtag, user, socket);
     if (!validateRoomName(user.prtag)) { user.prtag = "main"; }
-  
+  //Message Handler
     socket.on("message",async msg => {
-        
+        try{
         ensureRoom(user.prtag, user, socket);
         let data = null;
         let raw = msg.toString();
@@ -662,6 +671,12 @@ server.on("connection", socket => {
                 client.send(taggedMessage);
             }
         }
+      } catch (err) {
+        console.error("FATAL ERROR: ", err);
+        try {
+          socket.send("Server error occurred. Check logs.");
+        } catch {}
+      }
 
     });
 

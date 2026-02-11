@@ -58,8 +58,7 @@ const loginfo = {};
 
 loginfo["mhwenAdminLoginMJC"] = "2249";
 loginfo["testUser1"] ="101";
-loginfo["modOliverLimb20213"] = "30412";
-loginfo["testModerator3013"] = "lmrr1ls";
+
 //Hard-coded accounts that are embedded into the server.
 
 

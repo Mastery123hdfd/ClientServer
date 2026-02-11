@@ -418,6 +418,7 @@ server.on("connection", socket => {
                       if(cUser.prtag == previoustag){
                         cUser.prtag = "main2";
                       }
+                    }
                     db.ref("chatlog/" + previoustag).remove();
                     delete history[previoustag];
                     socket.send("Room removed; User moved to room 'main'");
@@ -519,7 +520,7 @@ server.on("connection", socket => {
             }
         }
 
-    };
+    });
 
     
 
@@ -528,6 +529,5 @@ server.on("connection", socket => {
             const moniker = user ? user.moniker : "Anonymous";
             console.log(`Client disconnected: ${moniker}`);
             clients.delete(socket);
-        });
     });
 });

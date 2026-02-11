@@ -143,6 +143,11 @@ function updateLoginPermData(a, db,token){
   }
 }
 async function updateSession(a, db, token){
+  if (!token) {
+    console.log("updateSession called with null token");
+    return;
+  }
+
  if(validateRoomName(a.user)){
   const snapshot = await db.ref("sessions/" + token).once("value");
   if(snapshot.exists()){
@@ -209,6 +214,7 @@ server.on("connection", socket => {
       sessionToken: null
     });
     const user = clients.get(socket);
+    ensureRoom(user.prtag, user, socket);
     if (!validateRoomName(user.prtag)) { user.prtag = "main"; }
   
     socket.on("message",async msg => {
@@ -406,12 +412,17 @@ server.on("connection", socket => {
             });
 
           } else{
-            if(loginfo[userin] === passin){
+            if (loginfo[userin] === passin) {
               user.username = userin;
               user.pass = passin;
-              user.moniker = acc.disp || userin;
+              if (acc && acc.disp) {
+                user.moniker = acc.disp;
+              } else {
+                user.moniker = userin;
+              }
               user.loggedIn = true;
             }
+
           }
             
               
@@ -658,8 +669,9 @@ server.on("connection", socket => {
 
     socket.on("close", () => {
         const user = clients.get(socket);
-            const moniker = user ? user.moniker : "Anonymous";
-            console.log(`Client disconnected: ${moniker}`);
-            clients.delete(socket);
+        const moniker = user ? user.moniker : "Anonymous";
+        console.log(`Client disconnected: ${moniker}`);
+        clients.delete(socket);
+
     });
 });

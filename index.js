@@ -168,7 +168,7 @@ server.on("connection", socket => {
       sessionToken: null
     });
     const user = clients.get(socket);
-
+    if (!validateRoomName(user.prtag)) { user.prtag = "main"; }
     
     socket.on("message",async msg => {
         
@@ -400,9 +400,7 @@ server.on("connection", socket => {
                 }
                 if (msg === "/gethistlength" && user.admin) {
                   socket.send("=== /gethistlength DEBUG START ===");
-                  socket.send("user.prtag:",user.prtag);
-                  socket.send("history keys:",Object.keys(history)); 
-                  socket.send("history[user.prtag]:", history[user.prtag]);
+                  socket.send("user.prtag:", user.prtag);
                   socket.send("type:", typeof history[user.prtag]);
                   socket.send("isArray:", Array.isArray(history[user.prtag]));
                   socket.send("=== /gethistlength DEBUG END ===");

@@ -145,14 +145,15 @@ function updateLoginPermData(a, db,token){
 async function updateSession(a, db, token){
  if(validateRoomName(a.user)){
   const snapshot = await db.ref("sessions/" + token).once("value");
-  if(snapshot.exists){
+  if(snapshot.exists()){
    const val = snapshot.val();
-   snapshot.ref.update({
+   sconst ref = db.ref("sessions/" + token);
+   await ref.update({
     mod: a.mod,
     admin: a.admin,
-   disp: a.disp
-   });
-  } else{
+    disp: a.disp
+  });
+ } else{
    console.log("Erorr! Session not found!");
    return;
   }
@@ -276,7 +277,7 @@ server.on("connection", socket => {
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
         if (data && data.type === "sessionrestart") {
-            const token = data.token;
+            token = data.token;
             const session = await loadSession(token);
 
             if (!session) {
@@ -397,7 +398,7 @@ server.on("connection", socket => {
             if(loginfo[userin] === passin){
               user.username = userin;
               user.pass = passin;
-              user.moniker = userin;
+              user.moniker = acc.disp || userin;
               user.loggedIn = true;
             }
           }
@@ -554,12 +555,12 @@ server.on("connection", socket => {
                 }
                 if(msg =="/giveOtherMod" && user.admin){
                     socket.send("Please input the username of the user you wish to give mod privileges to");
-                    user.awaitingModTarget = msg;
+                    user.awaitingModTarget = true;
                     return;
                 }
                 if(msg== "/giveOtherAdmin" && user.admin){
                     socket.send("Please input the username of the user you wish to give admin to");
-                    user.awaitingAdminTarget = msg;
+                    user.awaitingAdminTarget = true;
                     return;
                 }
                 if(user.awaitingAdminTarget){
@@ -569,7 +570,7 @@ server.on("connection", socket => {
                             cUser.mod = true;
                             client.send("You have been given admin privileges by " + user.moniker);
                             socket.send("Admin privileges given to " + msg);
-                            user.awaitingAdminTarget = null;
+                            user.awaitingAdminTarget = false;
                             let a = new Account(cUser.username, cUser.pass, true, true, cUser.moniker);
                             client.send("1");
                             socket.send("0");
@@ -584,7 +585,7 @@ server.on("connection", socket => {
                             cUser.mod = true;
                             client.send("You have been given mod privileges by " + user.moniker);
                             socket.send("Mod privileges given to " + msg);
-                            user.awaitingModTarget = null;
+                            user.awaitingModTarget = false;
                             let a = new Account(cUser.username, cUser.pass, cUser.admin, true, cUser.moniker);
                             updateLoginPermData(a, db);
                            updateSession(a,db,token);

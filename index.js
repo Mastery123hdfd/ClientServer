@@ -166,6 +166,8 @@ server.on("connection", socket => {
       sessionToken: null
     });
     const user = clients.get(socket);
+
+    
     socket.on("message",async msg => {
         
         ensureRoom(user.prtag, user, socket);
@@ -322,6 +324,18 @@ server.on("connection", socket => {
               socket.send("Incorrect sign-in data");
               return;
             }
+            const token = Math.random().toString(36).slice(2);
+            user.sessionToken = token; db.ref("sessions/" + token).set({ 
+            username: user.moniker,
+            admin: !!user.admin,
+            mod: !!user.mod,
+            timestamp: Date.now()
+            }).then(() => {
+                console.log("Session token stored in Firebase for user:", user.moniker);
+                socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+            });
+            socket.send(" Session token created");
+            socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
             return;
           }
       if(user.loggedIn = false){
@@ -505,18 +519,7 @@ server.on("connection", socket => {
 
     };
 
-    const token = Math.random().toString(36).slice(2);
-    user.sessionToken = token; db.ref("sessions/" + token).set({ 
-    username: user.moniker,
-    admin: !!user.admin,
-    mod: !!user.mod,
-    timestamp: Date.now()
-    }).then(() => {
-        console.log("Session token stored in Firebase for user:", user.moniker);
-        socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
-    });
-    socket.send(" Session token created");
-    socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+    
 
     socket.on("close", () => {
         const user = clients.get(socket);

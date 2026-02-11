@@ -22,7 +22,7 @@ console.log("WebSocket server running on port", port);
 const clients = new Map();
 
 // Proper history buffer
-let history = {};
+const history = {};
 
 function validateRoomName(name) {
     // Only allow alphanumeric, underscores, and hyphens

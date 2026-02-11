@@ -411,7 +411,8 @@ server.on("connection", socket => {
                   if (!Array.isArray(history[user.prtag])){
                     socket.send("Server error: history for room is not an array.");
                     return; 
-                  } socket.send(String(history[user.prtag].length));
+                  }
+                  socket.send(String(history[user.prtag].length));
                   return; 
                 }
                 if(msg=="/delroom" && user.admin){

@@ -167,10 +167,7 @@ server.on("connection", socket => {
     });
     const user = clients.get(socket);
     socket.on("message",async msg => {
-        if(user.moniker === "UNKNOWN"){
-            socket.send("Login required; create an account or log in to chat.");
-            return;
-        }
+        
         ensureRoom(user.prtag, user, socket);
         let data = null;
         let raw = msg.toString();
@@ -326,7 +323,11 @@ server.on("connection", socket => {
               return;
             }
             return;
-            }
+          }
+      if(user.loggedIn = false){
+            socket.send("Login required; create an account or log in to chat.");
+            return;
+        }
             
 
 

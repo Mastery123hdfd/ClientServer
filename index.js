@@ -331,6 +331,7 @@ server.on("connection", socket => {
           if(acnew){
             let k = userin;
             const snapshot = await db.ref("logindata/accountdata").once("value", snapshot => {
+              
               snapshot.forEach(child => {
                 const val = child.val();
                 if(val.user == userin && val.pass == passin){
@@ -346,18 +347,22 @@ server.on("connection", socket => {
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
             db.ref("logindata/accountdata").once("value", snapshot => {
-            snapshot.forEach(child => {
-    const a = child.val();
-    aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
-  });
-  for (const a of aclist) {
-    if (a.mod) modArray.push(a);
-    if (a.admin) adminArray.push(a);
-    regArray.push(a);
-    loginfo[a.user] = a.pass; 
-  } 
-  console.log("Login accounts loaded."); 
-});
+              aclist = [];
+              modArray = [];
+              adminArray = [];
+              regArray = [];
+              snapshot.forEach(child => {
+                const a = child.val();
+                aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
+              });
+              for (const a of aclist) {
+                if (a.mod) modArray.push(a);
+                if (a.admin) adminArray.push(a);
+                regArray.push(a);
+                loginfo[a.user] = a.pass; 
+              } 
+              console.log("Login accounts loaded."); 
+            });
 
           } else{
             if(loginfo[userin] === passin){

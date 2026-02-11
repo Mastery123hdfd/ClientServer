@@ -142,6 +142,11 @@ function updateLoginPermData(a, db){
   }
 }
 
+aclist = [];
+modArray = [];
+adminArray = [];
+regArray = [];
+
 db.ref("logindata/accountdata").once("value", snapshot => {
   snapshot.forEach(child => {
     const a = child.val();
@@ -176,7 +181,7 @@ server.on("connection", socket => {
  // Decode login info from Account Info
     clients.set(socket, {
       moniker: "UNKNOWN",
-      user: null,
+      username: null,
       pass:null,
       admin: false,
       mod: false,
@@ -325,7 +330,7 @@ server.on("connection", socket => {
           const acnew = ensureAccount(userin, passin);
           if(acnew){
             let k = userin;
-            db.ref("logindata/accountdata").once("value", snapshot => {
+            const snapshot = await db.ref("logindata/accountdata").once("value", snapshot => {
               snapshot.forEach(child => {
                 const val = child.val();
                 if(val.user == userin && val.pass == passin){
@@ -526,7 +531,7 @@ server.on("connection", socket => {
                             client.send("You have been given mod privileges by " + user.moniker);
                             socket.send("Mod privileges given to " + msg);
                             user.awaitingModTarget = null;
-                            let a = new Account(cUser.username, cUser.pass, true, cUser.admin, cUser.moniker);
+                            let a = new Account(cUser.username, cUser.pass, cUser.admin, true, cUser.moniker);
                             updateLoginPermData(a, db);
                         }
                     });

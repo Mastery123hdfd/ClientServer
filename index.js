@@ -47,6 +47,9 @@ db.ref("chatlog").once("value", snapshot => {
                 } 
             }); 
         }); 
+        if (!history["main2"]) {
+            history["main2"] = [];
+        }
     console.log("History loaded from Firebase"); 
 });
 

@@ -511,12 +511,8 @@ server.on("connection", socket => {
         ensureRoom(user.prtag,user,socket);
       
         history[user.prtag].push(taggedMessage);
-        if(!lengthMap[user.prtag]){
-          lengthMap[user.prtag] = 0;
-        }
-        lengthMap[user.prtag] = lengthMap[user.prtag]+1;
 
-        if (lengthMap[user.prtag] > 300) {
+        if (history[user.prtag].length > 300) {
             history[user.prtag].shift();
         }
 

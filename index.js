@@ -242,29 +242,37 @@ server.on("connection", socket => {
         }
             
         if(user.newName){
-          if(!msg){
-            socket.send("Invalid Moniker");
-            user.newName = false;
-            return;
-          } else{
-            user.moniker = msg;
-            user.newName = false;
-            socket.send("Name changed. New name: " + user.moniker);
-            db.ref("logindata/accountdata").once("value", snapshot => {
-              snapshot.forEach(child => {
-                const val = child.val();
-                if(val.user === user.username){ 
-                  child.ref.update({ disp: msg });
-                }
-              });
-            });
-           let a = new Account(user.username, user.pass, user.admin, user.mod, user.moniker);
-           if(!user.sessionToken){
-            updateSession(a,db,token);
-           }
-            return;
-          }
-        }
+  const newMoniker = msg?.trim();
+  if(!newMoniker || !validateRoomName(newMoniker)){
+    socket.send("Invalid Moniker. Use only letters, numbers, underscores, hyphens, 1-50 chars.");
+    user.newName = false;
+    return;
+  }
+
+  user.moniker = newMoniker;
+  user.newName = false;
+  socket.send("Name changed. New name: " + user.moniker);
+
+  // Update Firebase account data
+  db.ref("logindata/accountdata").once("value").then(snapshot => {
+    snapshot.forEach(child => {
+      const val = child.val();
+      if(val.user === user.username){ 
+        child.ref.update({ disp: newMoniker });
+      }
+    });
+  }).catch(err => console.error("Error updating login data:", err));
+
+  // Update session only if token exists
+  if(user.sessionToken){
+    const a = new Account(user.username, user.pass, user.admin, user.mod, user.moniker);
+    updateSession(a, db, user.sessionToken).catch(err => {
+      console.error("Error updating session:", err);
+    });
+  }
+
+  return;
+}
         const now = new Date();
         const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
         if (data && data.type === "sessionrestart") {

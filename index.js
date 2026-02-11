@@ -74,6 +74,9 @@ let regArray =[];
 
 history["main"] = [];
 
+function ensureIsArray(tag){
+  if (!Array.isArray(history[tag])) { history[tag] = []; }
+}
 
 function ensureRoom(tag, user, socket) {
     if (!history[tag]) {
@@ -400,6 +403,7 @@ server.on("connection", socket => {
                 }
                 if(msg=="/gethistlength" && user.admin){
                   ensureRoom(user.prtag, user, socket);
+                  ensureIsArray(user.prtag);
                   socket.send(history[user.prtag].length);
                   return;
                 }

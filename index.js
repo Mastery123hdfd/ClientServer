@@ -22,9 +22,9 @@ console.log("WebSocket server running on port", port);
 const clients = new Map();
 
 // Proper history buffer
-const history = {};
+let history = {};
 
-
+let lengthMap = {};
 
 function validateRoomName(name) {
     // Only allow alphanumeric, underscores, and hyphens
@@ -43,10 +43,12 @@ db.ref("chatlog").once("value", snapshot => {
           roomSnap.forEach(msgSnap => {
              const entry = msgSnap.val();
               if (entry && entry.taggedMessage) {
-                 history[room].push(entry.taggedMessage); 
+                 history[room].push(entry.taggedMessage);
+                 
                 } 
             }); 
         }); 
+        lengthMap[room].push(history[room].length);
         if (!history["main"]) {
             history["main"] = [];
         }
@@ -74,7 +76,7 @@ let regArray =[];
 
 history["main"] = [];
 
-let lengthMap = {};
+
 
 
 function ensureIsArray(tag){
@@ -410,7 +412,7 @@ server.on("connection", socket => {
                     history[user.prtag] = []; 
                   }
                   if(history[user.prtag].length){
-                    socket.send(history[user.prtag].length());
+                    socket.send(history[user.prtag].length);
                   } else{
                     socket.send("Error, history is not an array");
                   }

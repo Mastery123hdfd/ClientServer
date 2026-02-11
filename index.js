@@ -400,9 +400,9 @@ server.on("connection", socket => {
                 }
                 if (msg === "/gethistlength" && user.admin) {
                   socket.send("=== /gethistlength DEBUG START ===");
-                  socket.send("user.prtag:", user.prtag);
-                  socket.send("type:", typeof history[user.prtag]);
-                  socket.send("isArray:", Array.isArray(history[user.prtag]));
+                  socket.send("user.prtag:" + user.prtag);
+                  socket.send("type:" + typeof history[user.prtag]);
+                  socket.send("isArray:" + Array.isArray(history[user.prtag]));
                   socket.send("=== /gethistlength DEBUG END ===");
                   if (!Array.isArray(history[user.prtag])){
                     socket.send("Server error: history for room is not an array.");

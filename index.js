@@ -50,7 +50,7 @@ db.ref("chatlog").once("value", snapshot => {
     console.log("History loaded from Firebase"); 
 });
 
-if (!history["main2"]) history["main2"] = [];
+
 
 
 const cmdliststring = ["====Command List====", "/help: Displays this menu", "/cmd: Activates command mode", "/getprlist: Gets a list of all private rooms; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/strikemsg: Removes a message from the chat history and clears it from everyone's logs; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/clearhist: Clears the entire history of the current chat room; ADMIN ONLY; COMMAND MODE REQUIRED", "/getplayers: Gets a list of all users currently online; BROKEN", "/login: Starts the login process", "/changename: Changes your name", "/gethistlength: Gets the length of the current chat history; ADMIN ONLY; COMMAND MODE REQUIRED", "/loginhelp: Gives you instructions on how to login"]; 
@@ -164,6 +164,10 @@ server.on("connection", socket => {
     });
     const user = clients.get(socket);
     socket.on("message",async msg => {
+        if(user.moniker === "UNKNOWN"){
+            socket.send("Login required; create an account or log in to chat.");
+            return;
+        }
         ensureRoom(user.prtag, user, socket);
         let data = null;
         let raw = msg.toString();
@@ -250,6 +254,7 @@ server.on("connection", socket => {
             user.sessionToken = null;
           }
           socket.send("Permissions and flags cleared");
+          return;
         }
         if((msg == "/changename" || msg == "/changemoniker" ) && user.loggedIn){
 
@@ -389,10 +394,15 @@ server.on("connection", socket => {
                     for (const line of history["main2"]) {
                        socket.send(line);
                     }
+                    for(const [client, cUser] of clients){
+                      if(cUser.prtag == previoustag){
+                        cUser.prtag = "main2";
+                      }
                     db.ref("chatlog/" + previoustag).remove();
+                    delete history[previoustag];
                     socket.send("Room removed; User moved to room 'main'");
+                    return;
                   }
-                  return;
                 }
                 if(msg == "/getPlayerLoc" && user.admin){
                   for (const [client, cUser] of clients) {
@@ -424,6 +434,7 @@ server.on("connection", socket => {
                             cUser.mod = true;
                             client.send("You have been given admin privileges by " + user.moniker);
                             socket.send("Admin privileges given to " + user.awaitingAdminTarget);
+                            user.awaitingAdminTarget = null;
                         }
                     });
                 }
@@ -433,6 +444,7 @@ server.on("connection", socket => {
                             cUser.mod = true;
                             client.send("You have been given mod privileges by " + user.moniker);
                             socket.send("Mod privileges given to " + user.awaitingModTarget);
+                            user.awaitingModTarget = null;
                         }
                     });
                 }

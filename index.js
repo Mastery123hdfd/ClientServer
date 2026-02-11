@@ -130,9 +130,12 @@ function updateLoginPermData(a, db){
   if(validateRoomName(a.user)){
     db.ref("logindata/accountdata").once("value", snapshot=>{
       snapshot.forEach(child => {
-        if(child.user === a.user && child.pass === a.pass){
-          child.mod = a.mod;
-          child.admin = a.admin;
+        const val = child.val();
+        if(val.user === a.user && val.pass === a.pass){
+          child.ref.update({
+            mod: a.mod,
+            admin: a.admin
+          });
         }
       });
     });
@@ -157,8 +160,8 @@ function ensureAccount(user, pass){
   if (!validateRoomName(user)) return false;
   if(loginfo[user]){
     return false;
-  } else{l
-    const a = new Account(user, pass, false, false);
+  } else{
+    const a = new Account(user, pass, false, false, user);
     loginfo[user]= pass;
     encodeLoginData(a, db);
     return true;
@@ -223,6 +226,14 @@ server.on("connection", socket => {
             user.moniker = msg;
             user.newName = false;
             socket.send("Name changed. New name: " + user.moniker);
+            db.ref("logindata/accountdata").once("value", snapshot => {
+              snapshot.forEach(child => {
+                const val = child.val();
+                if(val.user === user.username){ 
+                  child.ref.update({ disp: msg });
+                }
+              });
+            });
             return;
           }
         }
@@ -322,11 +333,28 @@ server.on("connection", socket => {
             user.moniker = k;
             user.mod = false; 
             user.admin = false; 
+            user.username = userin;
+            user.password = passin;
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
+            db.ref("logindata/accountdata").once("value", snapshot => {
+            snapshot.forEach(child => {
+    const a = child.val();
+    aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
+  });
+  for (const a of aclist) {
+    if (a.mod) modArray.push(a);
+    if (a.admin) adminArray.push(a);
+    regArray.push(a);
+    loginfo[a.user] = a.pass; 
+  } 
+  console.log("Login accounts loaded."); 
+});
 
           } else{
             if(loginfo[userin] === passin){
+              user.username = userin;
+              user.password = passin;
               user.moniker = userin;
               user.loggedIn = true;
             }
@@ -343,7 +371,7 @@ server.on("connection", socket => {
                 if(user.mod && !user.admin){
                     socket.send("Welcome Moderator.");
                 }
-            }else{
+            }else if (!acnew){
               socket.send("Incorrect sign-in data");
               return;
             }
@@ -359,7 +387,6 @@ server.on("connection", socket => {
                 socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
             });
             socket.send(" Session token created");
-            socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
             }
             return;
           }
@@ -483,7 +510,7 @@ server.on("connection", socket => {
                             client.send("You have been given admin privileges by " + user.moniker);
                             socket.send("Admin privileges given to " + msg);
                             user.awaitingAdminTarget = null;
-                            let a = new Account(cUser.user, cUser.pass, true, true, cUser.moniker);
+                            let a = new Account(, cUser.pass, true, true, cUser.moniker);
                             updateLoginPermData(a, db);
                         }
                     });

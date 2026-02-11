@@ -257,6 +257,8 @@ server.on("connection", socket => {
                 }
               });
             });
+           let a = new Account(user.username, user.pass, user.admin, user.mod, user.moniker);
+           updateSession(a,db,token);
             return;
           }
         }

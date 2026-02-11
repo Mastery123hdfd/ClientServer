@@ -147,7 +147,7 @@ async function updateSession(a, db, token){
   const snapshot = await db.ref("sessions/" + token).once("value");
   if(snapshot.exists()){
    const val = snapshot.val();
-   sconst ref = db.ref("sessions/" + token);
+   const ref = db.ref("sessions/" + token);
    await ref.update({
     mod: a.mod,
     admin: a.admin,
@@ -280,10 +280,24 @@ server.on("connection", socket => {
             token = data.token;
             const session = await loadSession(token);
 
+            user.username = session.username;
+            user.pass = session.pass || loginfo[session.username];
+
+
             if (!session) {
               socket.send("Invalid Session Token");
               return;
             }
+
+            db.ref("sessions/" + token).set({
+              username: user.username,
+              pass: user.pass,
+              admin: user.admin,
+              mod: user.mod,
+              disp: user.moniker,
+              timestamp: Date.now()
+            });
+
 
              user.moniker = session.disp || session.username;
              user.loggedIn = true;
@@ -377,10 +391,7 @@ server.on("connection", socket => {
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
             db.ref("logindata/accountdata").once("value", snapshot => {
-              aclist = [];
-              modArray = [];
-              adminArray = [];
-              regArray = [];
+              
               snapshot.forEach(child => {
                 const a = child.val();
                 aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
@@ -410,7 +421,7 @@ server.on("connection", socket => {
            snapshot.forEach(child => {
               const val = child.val();
               if (val.user === userin && val.pass === passin) {
-                acc = val;
+                acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
               }
            });
            if (!acc) {

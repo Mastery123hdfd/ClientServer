@@ -403,13 +403,12 @@ server.on("connection", socket => {
                   socket.send("user.prtag:" + user.prtag);
                   socket.send("type:" + typeof history[user.prtag]);
                   socket.send("isArray:" + Array.isArray(history[user.prtag]));
-                  socket.send("length:" + history[user.prtag].length);
                   socket.send("=== /gethistlength DEBUG END ===");
                   if (!Array.isArray(history[user.prtag])){
                     socket.send("Server error: history for room is not an array.");
                     return; 
                   }
-                  socket.send("" + history[user.prtag].length);
+                  socket.send("Length: " + history[user.prtag].length);
                   return; 
                 }
                 if(msg=="/delroom" && user.admin){
@@ -511,7 +510,9 @@ server.on("connection", socket => {
       
         history[user.prtag].push(taggedMessage);
 
-        if (history[user.prtag].length > 300) {
+        if (history[user.prtag].length > 200) {
+            history[user.prtag].shift();
+            history[user.prtag].shift();
             history[user.prtag].shift();
         }
 

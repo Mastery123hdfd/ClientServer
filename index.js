@@ -176,6 +176,8 @@ server.on("connection", socket => {
  // Decode login info from Account Info
     clients.set(socket, {
       moniker: "UNKNOWN",
+      user: null,
+      pass:null,
       admin: false,
       mod: false,
       prtag:"main",
@@ -325,8 +327,9 @@ server.on("connection", socket => {
             let k = userin;
             db.ref("logindata/accountdata").once("value", snapshot => {
               snapshot.forEach(child => {
-                if(child.user == userin && child.pass == passin){
-                  k = child.disp;
+                const val = child.val();
+                if(val.user == userin && val.pass == passin){
+                  k = val.disp;
                 }
               });
             });
@@ -334,7 +337,7 @@ server.on("connection", socket => {
             user.mod = false; 
             user.admin = false; 
             user.username = userin;
-            user.password = passin;
+            user.pass = passin;
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
             db.ref("logindata/accountdata").once("value", snapshot => {
@@ -354,7 +357,7 @@ server.on("connection", socket => {
           } else{
             if(loginfo[userin] === passin){
               user.username = userin;
-              user.password = passin;
+              user.pass = passin;
               user.moniker = userin;
               user.loggedIn = true;
             }
@@ -382,6 +385,7 @@ server.on("connection", socket => {
                 admin: !!user.admin,
                 mod: !!user.mod,
                 timestamp: Date.now(),
+                disp: user.moniker,
             }).then(() => {
                 console.log("Session token stored in Firebase for user:", user.moniker);
                 socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
@@ -489,7 +493,7 @@ server.on("connection", socket => {
                 }
                 if(msg == "/giveSelfMod" && user.admin){
                   user.mod = true;
-                  let a = new Account(user.user, user.pass, true, true, user.moniker);
+                  let a = new Account(user.username, user.pass, true, true, user.moniker);
                   updateLoginPermData(a, db);
                 }
                 if(msg =="/giveOtherMod" && user.admin){
@@ -510,7 +514,7 @@ server.on("connection", socket => {
                             client.send("You have been given admin privileges by " + user.moniker);
                             socket.send("Admin privileges given to " + msg);
                             user.awaitingAdminTarget = null;
-                            let a = new Account(, cUser.pass, true, true, cUser.moniker);
+                            let a = new Account(cUser.username, cUser.pass, true, true, cUser.moniker);
                             updateLoginPermData(a, db);
                         }
                     });
@@ -522,7 +526,7 @@ server.on("connection", socket => {
                             client.send("You have been given mod privileges by " + user.moniker);
                             socket.send("Mod privileges given to " + msg);
                             user.awaitingModTarget = null;
-                            let a = new Account(cUser.user, cUser.pass, true, cUser.admin, cUser.moniker);
+                            let a = new Account(cUser.username, cUser.pass, true, cUser.admin, cUser.moniker);
                             updateLoginPermData(a, db);
                         }
                     });

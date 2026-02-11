@@ -1,4 +1,4 @@
-const admin = require("firebase-admin");
+ admin = require("firebase-admin");
 
 admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
@@ -225,7 +225,7 @@ server.on("connection", socket => {
         }
             
         if(user.newName){
-          if(!validateRoomName(msg)){
+          if(msg)){
             socket.send("Invalid Moniker");
             user.newName = false;
             return;

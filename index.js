@@ -457,7 +457,7 @@ server.on("connection", socket => {
                             cUser.admin = true;
                             cUser.mod = true;
                             client.send("You have been given admin privileges by " + user.moniker);
-                            socket.send("Admin privileges given to " + user.awaitingAdminTarget);
+                            socket.send("Admin privileges given to " + msg);
                             user.awaitingAdminTarget = null;
                         }
                     });
@@ -467,7 +467,7 @@ server.on("connection", socket => {
                         if(cUser.moniker === msg){
                             cUser.mod = true;
                             client.send("You have been given mod privileges by " + user.moniker);
-                            socket.send("Mod privileges given to " + user.awaitingModTarget);
+                            socket.send("Mod privileges given to " + msg);
                             user.awaitingModTarget = null;
                         }
                     });

@@ -99,6 +99,7 @@ class Account{
     this.pass = pass;
     this.mod = mod;
     this.admin = admin;
+    this.disp = disp;
   }
   verify(userin, passin){
     if(this.user == userin && this.pass == passin){
@@ -120,7 +121,8 @@ function encodeLoginData(a, db){
       user: a.user, 
       pass: a.pass, 
       admin: a.admin, 
-      mod: a.mod 
+      mod: a.mod,
+      disp: a.disp
     }); 
   }
 }
@@ -128,7 +130,7 @@ function encodeLoginData(a, db){
 db.ref("logindata/accountdata").once("value", snapshot => {
   snapshot.forEach(child => {
     const a = child.val();
-    aclist.push(new Account(a.user, a.pass, a.admin, a.mod));
+    aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
   });
   for (const a of aclist) {
     if (a.mod) modArray.push(a);
@@ -138,12 +140,12 @@ db.ref("logindata/accountdata").once("value", snapshot => {
   } 
   console.log("Login accounts loaded."); 
 });
-
+//^Loads login data
 function ensureAccount(user, pass){
   if (!validateRoomName(user)) return false;
   if(loginfo[user]){
     return false;
-  } else{
+  } else{l
     const a = new Account(user, pass, false, false);
     loginfo[user]= pass;
     encodeLoginData(a, db);
@@ -168,7 +170,7 @@ server.on("connection", socket => {
     });
     const user = clients.get(socket);
     if (!validateRoomName(user.prtag)) { user.prtag = "main"; }
-    
+  
     socket.on("message",async msg => {
         
         ensureRoom(user.prtag, user, socket);
@@ -297,7 +299,15 @@ server.on("connection", socket => {
           const passin = data.v2;
           const acnew = ensureAccount(userin, passin);
           if(acnew){
-            user.moniker = userin;
+            let k = userin;
+            db.ref("logindata/accountdata").once("value", snapshot => {
+              snapshot.forEach(child => {
+                if(child.user == userin && child.pass == passin){
+                  k = child.disp;
+                }
+              });
+            });
+            user.moniker = k;
             user.mod = false; 
             user.admin = false; 
             socket.send("Account created. Logged in as normal user.");
@@ -331,7 +341,7 @@ server.on("connection", socket => {
                 username: user.moniker,
                 admin: !!user.admin,
                 mod: !!user.mod,
-                timestamp: Date.now()
+                timestamp: Date.now(),
             }).then(() => {
                 console.log("Session token stored in Firebase for user:", user.moniker);
                 socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));

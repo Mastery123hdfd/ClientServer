@@ -143,7 +143,7 @@ function updateLoginPermData(a, db,token){
 }
 function updateSession(a, db, token){
  if(validateRoomName(a.user)){
-  const snapshot = await db.ref("sessions/" + token).once("value");
+  const snapshot = db.ref("sessions/" + token).once("value");
   if(snapshot.exists){
    const val = snapshot.val();
    snapshot.ref.update({

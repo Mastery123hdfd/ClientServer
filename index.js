@@ -346,8 +346,6 @@ server.on("connection", socket => {
             socket.send("Login required; create an account or log in to chat.");
             return;
         }
-            
-
 
         if(msg == "/getplayers"){
           for (const [client, cUser] of clients) {
@@ -357,7 +355,7 @@ server.on("connection", socket => {
           }
           return;
         }
-        if(msg == "/cmd"){
+        if(msg == "/cmd"){ 
                 if(user.mod || user.admin){
                     command = true;
                     socket.send("Command Mode Activated");
@@ -400,9 +398,9 @@ server.on("connection", socket => {
                         socket.send(p);
                     }
                 }
-                if (msg === "/gethistlength" && user.admin {
+                if (msg === "/gethistlength" && user.admin) {
                   console.log("=== /gethistlength DEBUG START ===");
-                 console.log("user.prtag:",user.prtag);
+                  console.log("user.prtag:",user.prtag);
                   console.log("history keys:",Object.keys(history)); 
                   console.log("history[user.prtag]:", history[user.prtag]);
                   console.log("type:", typeof history[user.prtag]);

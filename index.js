@@ -225,7 +225,7 @@ server.on("connection", socket => {
         }
             
         if(user.newName){
-          if(msg)){
+          if(msg){
             socket.send("Invalid Moniker");
             user.newName = false;
             return;

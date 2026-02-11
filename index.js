@@ -152,7 +152,7 @@ async function updateSession(a, db, token){
     disp: a.moniker
    });
   } else{
-   console.log("Erorr! Session not found!);
+   console.log("Erorr! Session not found!");
    return;
   }
  }

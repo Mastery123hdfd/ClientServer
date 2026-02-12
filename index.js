@@ -606,7 +606,7 @@ server.on("connection", socket => {
                             client.send("You have been given admin privileges by " + user.moniker);
                             socket.send("Admin privileges given to " + msg);
                             user.awaitingAdminTarget = false;
-                            let a = new Account(cUser.username, cUser.pass, true, true, cUser.moniker);
+                            let a = new Account(cUser.username, client.pass, true, true, cUser.moniker);
                             client.send("1");
                             socket.send("0");
                             updateLoginPermData(a, db);
@@ -621,7 +621,7 @@ server.on("connection", socket => {
                             client.send("You have been given mod privileges by " + user.moniker);
                             socket.send("Mod privileges given to " + msg);
                             user.awaitingModTarget = false;
-                            let a = new Account(cUser.username, cUser.pass, cUser.admin, true, cUser.moniker);
+                            let a = new Account(cUser.username, client.pass, cUser.admin, true, cUser.moniker);
                             updateLoginPermData(a, db);
                            updateSession(a,db,token);
                         }

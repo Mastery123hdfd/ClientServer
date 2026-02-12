@@ -1,8 +1,3 @@
-setInterval(() => {
-  console.log("test", Date.now());
-}, 5000);
-
-
 process.stdout.write = (function(write) {
   return function(string, encoding, fd) {
     write.apply(process.stdout, arguments);

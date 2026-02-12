@@ -81,7 +81,7 @@ const cmdliststring = ["====Command List====", "/help: Displays this menu", "/cm
 
 const loginfo = {};
 
-loginfo["mhwenAdminLoginMJC"] = "2249";
+//This is the Admin Account login I accidentally left here, you're not getting this info ;)
 loginfo["testUser1"] ="101";
 
 //Hard-coded accounts that are embedded into the server.

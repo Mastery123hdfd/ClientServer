@@ -405,128 +405,82 @@ server.on("connection", socket => {
 
             return;
           }
-      if (data && data.type == "login"){
-        socket.send("Login Data received; Beginnning Login Process");
-        
-            socket.send("Account created. Logged in as normal user.");
-            user.loggedIn = true;
-        if(user.loggedIn){
-          socket.send("Error: User already logged in");
-          return;
-        }
-          const userin = data.v1;
-          const passin = data.v2;
-          const acnew = ensureAccount(userin, passin);
-          if(acnew){
-            let k = userin;
-            try{
-            const snapshot = await db.ref("logindata/accountdata").once("value", snapshot => {
-              
-              snapshot.forEach(child => {
-                const val = child.val();
-                if(val.user == userin){
-                  k = val.disp;
-                }
-              });
-            });
+      if (data && data.type === "login") {
+  socket.send("Login Data received; Beginning Login Process");
 
-            } catch(err){
-              console.error("Error accessing login data:", err);
-              socket.send("Server error during account creation. Please try again later.");
-              return;
-            }
-            user.moniker = k;
-            user.mod = false; 
-            user.admin = false; 
-            user.username = userin;
-            user.pass = passin;
-            
-            try{
-            db.ref("logindata/accountdata").once("value", snapshot => {
-              
-              snapshot.forEach(child => {
-                const a = child.val();
-                aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
-              });
-              for (const a of aclist) {
-                if (a.mod) modArray.push(a);
-                if (a.admin) adminArray.push(a);
-                regArray.push(a);
-                loginfo[a.user] = a.pass; 
-              } 
-              console.log("Login accounts loaded."); 
-            });
-          }catch(err){
-              console.error("Error loading login accounts from Firebase:", err);
-            }
-            let acc = null;
-        snapshot.forEach(child => {
-          const val = child.val();
-          if (val.user === userin && val.pass === passin) {
-            acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
-          }
-        });
+  const userin = data.v1;
+  const passin = data.v2;
 
-          } else{
-            if (loginfo[userin] === passin) {
-              user.username = userin;
-              user.pass = passin;
-              if (acc && acc.disp) {
-                user.moniker = acc.disp;
-              } else {
-                user.moniker = userin;
-              }
-              user.loggedIn = true;
-            }
+  if (user.loggedIn) {
+    socket.send("Error: User already logged in");
+    return;
+  }
 
-          }
-            
-          try{
-           const snapshot = await db.ref("logindata/accountdata").once("value");
-          } catch(err){
-            console.error("Error accessing login data:", err);
-            socket.send("Server error during login. Please try again later.");
-            return;
-          }
+  let acc = null;
+  try {
+    const snapshot = await db.ref("logindata/accountdata").once("value");
+    snapshot.forEach(child => {
+      const val = child.val();
+      if (val.user === userin && val.pass === passin) {
+        acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
+      }
+    });
+  } catch (err) {
+    console.error("Error accessing login data:", err);
+    socket.send("Server error during login. Please try again later.");
+    return;
+  }
 
-           
-           if (!acc) {
-               socket.send("Incorrect sign-in data");
-               return;
-           }
-           user.admin = !!acc.admin;
-           user.mod = !!acc.mod;
-           user.moniker = acc.disp || userin;
+  if (!acc) {
+    const created = ensureAccount(userin, passin);
+    if (!created) {
+      socket.send("Incorrect sign-in data");
+      return;
+    }
 
-            if (acc) {
-                user.admin = acc.admin;
-                user.mod = acc.mod;
-                if(user.admin){
-                    socket.send("WELCOME ADMINISTRATOR.");
-                }
-                if(user.mod && !user.admin){
-                    socket.send("Welcome Moderator.");
-                }
-            }else if (!acnew){
-              socket.send("Incorrect sign-in data");
-              return;
-            }
-            if(user.sessionToken == null){
-            token = Math.random().toString(36).slice(2);
-            user.sessionToken = token; db.ref("sessions/" + token).set({ 
-                username: user.username,
-                admin: !!user.admin,
-                mod: !!user.mod,
-                timestamp: Date.now(),
-                disp: user.moniker,
-            }).then(() => {
-                console.log("Session token stored in Firebase for user:", user.moniker);
-                socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
-            });
-            socket.send(" Session token created");
-            }
-            return;
-          }
+    acc = new Account(userin, passin, false, false, userin);
+    user.username = acc.user;
+    user.pass = acc.pass;
+    user.moniker = acc.disp;
+    user.admin = false;
+    user.mod = false;
+    user.loggedIn = true;
+
+    socket.send("Account created. Logged in as normal user.");
+  } else {
+
+    user.username = acc.user;
+    user.pass = acc.pass;
+    user.moniker = acc.disp || acc.user;
+    user.admin = !!acc.admin;
+    user.mod = !!acc.mod;
+    user.loggedIn = true;
+
+    if (user.admin) socket.send("WELCOME ADMINISTRATOR.");
+    else if (user.mod) socket.send("Welcome Moderator.");
+  }
+
+
+  if (!user.sessionToken) {
+    const token = Math.random().toString(36).slice(2);
+    user.sessionToken = token;
+
+    await db.ref("sessions/" + token).set({
+      username: user.username,
+      pass: user.pass,
+      admin: user.admin,
+      mod: user.mod,
+      disp: user.moniker,
+      timestamp: Date.now()
+    });
+
+    socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+    socket.send("Session token created");
+  }
+
+  return;
+}
+
       if(user.loggedIn == false){
             socket.send("Login required; create an account or log in to chat.");
             return;

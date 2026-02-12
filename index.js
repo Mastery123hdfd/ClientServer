@@ -257,7 +257,7 @@ server.on("connection", socket => {
   //Message Handler
     socket.on("message",async msg => {
         try{
-        ensureRoom(user.prtag, user, socket);
+        if (!ensureRoom(user.prtag, user, socket)) return;
         let data = null;
         let raw = msg.toString();
         

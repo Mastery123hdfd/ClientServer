@@ -413,13 +413,7 @@ server.on("connection", socket => {
           }
       if (data && data.type == "login"){
         socket.send("Login Data received; Beginnning Login Process");
-        let acc = null;
-        snapshot.forEach(child => {
-          const val = child.val();
-          if (val.user === userin && val.pass === passin) {
-            acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
-          }
-        });
+        
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
         if(user.loggedIn){
@@ -471,6 +465,13 @@ server.on("connection", socket => {
           }catch(err){
               console.error("Error loading login accounts from Firebase:", err);
             }
+            let acc = null;
+        snapshot.forEach(child => {
+          const val = child.val();
+          if (val.user === userin && val.pass === passin) {
+            acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
+          }
+        });
 
           } else{
             if (loginfo[userin] === passin) {

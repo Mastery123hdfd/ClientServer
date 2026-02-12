@@ -28,7 +28,12 @@ admin.initializeApp({
 const db = admin.database();
 
 function loadSession(token) {
+  try{
   return db.ref("sessions/" + token).once("value").then(snap => snap.val());
+  } catch(err){
+    console.error("Error loading session:", err);
+    return null;
+  }
 }
 
 
@@ -55,6 +60,7 @@ function validateRoomName(name) {
 
 
 //load from firebase
+try{
 db.ref("chatlog").once("value", snapshot => {
      snapshot.forEach(roomSnap => {
          const room = roomSnap.key;
@@ -69,6 +75,9 @@ db.ref("chatlog").once("value", snapshot => {
         }); 
     console.log("History loaded from Firebase"); 
 });
+} catch(err){
+  console.error("Error loading history from Firebase:", err);
+}
 
 
 
@@ -150,18 +159,23 @@ function encodeLoginData(a, db){
 }
 function updateLoginPermData(a, db,token){
   if(validateRoomName(a.user)){
-    db.ref("logindata/accountdata").once("value", snapshot=>{
-      snapshot.forEach(child => {
-        const val = child.val();
-        if(val.user === a.user && val.pass === a.pass){
-          child.ref.update({
-            mod: a.mod,
-            admin: a.admin
+    try{
+      db.ref("logindata/accountdata").once("value", snapshot=>{
+        snapshot.forEach(child => {
+          const val = child.val();
+          if(val.user === a.user && val.pass === a.pass){
+            child.ref.update({
+              mod: a.mod,
+              admin: a.admin,
+              disp: a.disp
           });
         }
       });
-    });
-  }
+      });
+    }catch(err){
+      console.error("Error updating login permission data:", err);
+  } 
+}
 }
 async function updateSession(a, db, token){
   if (!token) {
@@ -170,7 +184,12 @@ async function updateSession(a, db, token){
   }
 
  if(validateRoomName(a.user)){
+  try{
   const snapshot = await db.ref("sessions/" + token).once("value");
+  } catch(err){
+    console.error("Error accessing session data:", err);
+    return;
+  }
   if(snapshot.exists()){
    const val = snapshot.val();
    const ref = db.ref("sessions/" + token);
@@ -190,7 +209,7 @@ aclist = [];
 modArray = [];
 adminArray = [];
 regArray = [];
-
+try{
 db.ref("logindata/accountdata").once("value", snapshot => {
   snapshot.forEach(child => {
     const a = child.val();
@@ -204,6 +223,9 @@ db.ref("logindata/accountdata").once("value", snapshot => {
   } 
   console.log("Login accounts loaded."); 
 });
+} catch(err){
+  console.error("Error loading login accounts from Firebase:", err);
+}
 //^Loads login data
 function ensureAccount(user, pass){
   if (!validateRoomName(user)) return false;
@@ -280,7 +302,6 @@ server.on("connection", socket => {
   user.moniker = newMoniker;
   user.newName = false;
   socket.send("Name changed. New name: " + user.moniker);
-
   // Update Firebase account data
   db.ref("logindata/accountdata").once("value").then(snapshot => {
     snapshot.forEach(child => {
@@ -401,6 +422,7 @@ server.on("connection", socket => {
           const acnew = ensureAccount(userin, passin);
           if(acnew){
             let k = userin;
+            try{
             const snapshot = await db.ref("logindata/accountdata").once("value", snapshot => {
               
               snapshot.forEach(child => {
@@ -410,6 +432,12 @@ server.on("connection", socket => {
                 }
               });
             });
+
+            } catch(err){
+              console.error("Error accessing login data:", err);
+              socket.send("Server error during account creation. Please try again later.");
+              return;
+            }
             user.moniker = k;
             user.mod = false; 
             user.admin = false; 
@@ -417,6 +445,7 @@ server.on("connection", socket => {
             user.pass = passin;
             socket.send("Account created. Logged in as normal user.");
             user.loggedIn = true;
+            try{
             db.ref("logindata/accountdata").once("value", snapshot => {
               
               snapshot.forEach(child => {
@@ -431,6 +460,9 @@ server.on("connection", socket => {
               } 
               console.log("Login accounts loaded."); 
             });
+            catch(err){
+              console.error("Error loading login accounts from Firebase:", err);
+            }
 
           } else{
             if (loginfo[userin] === passin) {
@@ -446,8 +478,13 @@ server.on("connection", socket => {
 
           }
             
-              
+          try{
            const snapshot = await db.ref("logindata/accountdata").once("value");
+          } catch(err){
+            console.error("Error accessing login data:", err);
+            socket.send("Server error during login. Please try again later.");
+            return;
+          }
 
            let acc = null;
            snapshot.forEach(child => {
@@ -534,9 +571,13 @@ server.on("connection", socket => {
                 if(msg == "/strikemsg"){
                     history[user.prtag].pop();
                     taggedMessage = (JSON.stringify({type:"strikemsg"}));
+                    try{
                      db.ref("chatlog/" + user.prtag).limitToLast(1).once("value", snapshot => {
                      snapshot.forEach(child => child.ref.remove());
                     });
+                    } catch(err) {
+                      console.error("Error removing last message:", err);
+                    }
                 }
                 if (msg == "/clearhist" && user.admin) {
                     history[user.prtag] = [];

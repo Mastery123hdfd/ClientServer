@@ -323,14 +323,13 @@ server.on("connection", socket => {
             token = data.token;
             const session = await loadSession(token);
 
+            if (!session) {
+              return;
+      }
+
+
             user.username = session.username;
             user.pass = session.pass || loginfo[session.username];
-
-
-            if (!session) {
-              socket.send("Invalid Session Token");
-              return;
-            }
 
             db.ref("sessions/" + token).set({
               username: user.username,

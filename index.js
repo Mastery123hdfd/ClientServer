@@ -411,6 +411,15 @@ server.on("connection", socket => {
 
             return;
         }
+      let acc = null;
+           snapshot.forEach(child => {
+              const val = child.val();
+              if (val.user === userin && val.pass === passin) {
+                acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
+              }
+           });
+            socket.send("Account created. Logged in as normal user.");
+            user.loggedIn = true;
       if (data && data.type == "login"){
         socket.send("Login Data received; Beginnning Login Process");
         if(user.loggedIn){
@@ -443,15 +452,7 @@ server.on("connection", socket => {
             user.admin = false; 
             user.username = userin;
             user.pass = passin;
-            let acc = null;
-           snapshot.forEach(child => {
-              const val = child.val();
-              if (val.user === userin && val.pass === passin) {
-                acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
-              }
-           });
-            socket.send("Account created. Logged in as normal user.");
-            user.loggedIn = true;
+            
             try{
             db.ref("logindata/accountdata").once("value", snapshot => {
               

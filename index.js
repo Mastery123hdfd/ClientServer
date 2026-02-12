@@ -460,7 +460,7 @@ server.on("connection", socket => {
               } 
               console.log("Login accounts loaded."); 
             });
-            catch(err){
+          }catch(err){
               console.error("Error loading login accounts from Firebase:", err);
             }
 

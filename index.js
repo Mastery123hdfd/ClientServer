@@ -168,7 +168,7 @@ let aclist = [];
 
 function encodeLoginData(a, db){
   if (validateRoomName(a.user)){
-    db.ref("logindata/accountdata").push({
+    db.ref("logindata/accountdata/" + a.user).push({
       user: a.user, 
       pass: a.pass, 
       admin: a.admin, 
@@ -415,11 +415,10 @@ server.on("connection", socket => {
                 const val = child.val();
                 if (val.user === userin && val.pass === passin) {
                     acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
+                    newaccount++;
                 }
                 if(val.user === userin && val.pass !== passin){
                     acc = null;
-                }
-                if(val.user !== userin && val.pass !== passin){
                     newaccount++;
                 }
             });

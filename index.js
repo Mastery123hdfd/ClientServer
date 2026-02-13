@@ -277,7 +277,11 @@ server.on("connection", socket => {
     const user = clients.get(socket);
     ensureRoom(user.prtag, user, socket);
     if (!validateRoomName(user.prtag)) { user.prtag = "main"; }
-  //Message Handler
+
+
+  //Message Handler==================================================
+
+
     socket.on("message",async msg => {
       console.log("WS: raw message:", msg.toString());
 
@@ -375,7 +379,7 @@ server.on("connection", socket => {
             }
             if(session.moniker == "UNKNOWN"){
               socket.send("INVALID SESSION DATA. Session data must include a valid moniker. UNKNOWN is an undefined moniker. Connection closing.");
-              socket.close();
+              msg = "/logout";
             }
             user.username = session.username;
             user.pass = session.pass || loginfo[session.username];

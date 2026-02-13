@@ -325,6 +325,11 @@ server.on("connection", socket => {
 
             if (!session) {
               return;
+            }
+            if(session.moniker == "UNKNOWN"){
+              socket.send("INVALID SESSION DATA. Session data must include a valid moniker. UNKNOWN is an undefined moniker. Connection closing.");
+              socket.close();
+            }
       }
 
 
@@ -351,6 +356,8 @@ server.on("connection", socket => {
             socket.send("Session restored for " + user.moniker);
              console.log("Session restored for", user.moniker);
             return;
+        } catch(err){
+          console.error("Error restoring session:", err);
         }
 
         if(msg=="/help"){
@@ -446,7 +453,7 @@ server.on("connection", socket => {
     user.mod = false;
     user.loggedIn = true;
 
-    socket.send("Account created. Logged in as normal user.");
+    socket.send("Account created. Logged in as normal user. Please note: Accounts cannot have username UNKNOWN. If this happens, please make a new account.");
   } else {
 
     user.username = acc.user;

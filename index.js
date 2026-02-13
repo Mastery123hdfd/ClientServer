@@ -639,12 +639,14 @@ server.on("connection", socket => {
       });
 
       let taggedString = `(${timestamp}) | ${user.moniker}: ${msg}`;
+      
 
       if (user.admin) {
         taggedString = `(${timestamp}) | [ADMIN] ${user.moniker}: ${msg}`;
       } else if (user.mod) {
         taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
       }
+      socket.send("String generated");
 
       if(restrictedRooms.include(user.prtag) && (!user.mod || !user.admin)){
         socket.send("Room is restricted. Only staff may message here.");

@@ -315,7 +315,7 @@ server.on("connection", socket => {
             firstmessage = false;
         }
 
-        // ===================== NAME CHANGE =====================
+        // ===================== NAME CHANGE HANDLER =====================
 
         if (user.newName) {
             const newMoniker = msg?.trim();
@@ -331,7 +331,26 @@ server.on("connection", socket => {
             socket.send("Name changed. New name: " + user.moniker);
             sessionUpdate(user, db, user.sessionToken);
             return;
+        }
+
+        // ===================== CHANGE NAME ========================
+
+        if((msg == "/changename" || msg == "/changemoniker") && user.loggedIn){
+          socket.send("Please input your new name.");
+          user.newName = true;
+          return;
+        }
+
+        // ===================== Get Users ========================
+
+        if(msg == "/getusers"){
+          socket.send("================= USERS IN ROOM =================");
+          for(const [client, cUser] of clients){
+            if(client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag){
+              socket.send("User: " + cUser.moniker);
+            }
           }
+        }
 
         // ===================== SESSION RESTORE =====================
 

@@ -20,6 +20,19 @@ process.on("unhandledRejection", err => {
   console.error("UNHANDLED REJECTION:", err);
 });
 
+let last = Date.now();
+
+setInterval(() => {
+  const now = Date.now();
+  const diff = now - last;
+
+  if (diff > 200) { // threshold for freeze detection
+    console.error("EVENT LOOP FREEZE DETECTED:", diff, "ms");
+  }
+
+  last = now;
+}, 100);
+
 
 admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),

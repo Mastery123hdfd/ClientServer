@@ -330,9 +330,6 @@ server.on("connection", socket => {
               socket.send("INVALID SESSION DATA. Session data must include a valid moniker. UNKNOWN is an undefined moniker. Connection closing.");
               socket.close();
             }
-      }
-
-
             user.username = session.username;
             user.pass = session.pass || loginfo[session.username];
 
@@ -344,9 +341,7 @@ server.on("connection", socket => {
               disp: user.moniker,
               timestamp: Date.now()
             });
-
-
-             user.moniker = session.disp || session.username;
+            user.moniker = session.disp || session.username;
              user.loggedIn = true;
              user.admin = !!session.admin;
             user.mod = !!session.mod;
@@ -356,6 +351,8 @@ server.on("connection", socket => {
             socket.send("Session restored for " + user.moniker);
              console.log("Session restored for", user.moniker);
             return;
+
+      }
         } catch(err){
           console.error("Error restoring session:", err);
         }
@@ -682,12 +679,6 @@ server.on("connection", socket => {
                 client.send(taggedMessage);
             }
         }
-      } catch (err) {
-        console.error("FATAL ERROR: ", err);
-        try {
-          socket.send("Server error occurred. Check logs.");
-        } catch {}
-      }
 
     });
 

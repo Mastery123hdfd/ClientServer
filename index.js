@@ -120,6 +120,7 @@ history["main"] = [];
 
 
 function ensureRoom(tag, user, socket) {
+  socket.send(JSON.stringify({ type: "clearHistoryChatless" }));
     if (!Array.isArray(history[tag])) {
         if(user.mod || user.admin){
             history[tag] = [];
@@ -406,6 +407,11 @@ server.on("connection", socket => {
       // ============================================================
       // ======================= COMMAND MODE =======================
       // ============================================================
+      if(msg == "/cmd"){
+        socket.send("Command Mode Activated. Do /cmdoff to disable.");
+        command = true;
+        return;
+      }
 
       if (command) {
 
@@ -574,7 +580,6 @@ server.on("connection", socket => {
           // ===================== COMMAND MODE OFF =====================
 
           if (msg == "/cmdoff") {
-
             socket.send("Command Mode Deactivated");
             command = false;
             return;

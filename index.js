@@ -647,11 +647,11 @@ server.on("connection", socket => {
         taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
       }
       socket.send("String generated");
-      if(!RestrictedRooms){
+      if(!restrictedRooms){
         let restrictedRooms = [];
       }
       try{
-      if(restrictedRooms.include(user.prtag) && (!user.mod || !user.admin)){
+      if(restrictedRooms.includes(user.prtag) && (!user.mod || !user.admin)){
         socket.send("Room is restricted. Only staff may message here.");
         return;
       }

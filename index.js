@@ -72,7 +72,7 @@ function validateRoomName(name) {
 }
 
 
-
+let restrictedRooms = [];
 
 //load from firebase
 try{
@@ -87,6 +87,10 @@ db.ref("chatlog").once("value", snapshot => {
                  
                 } 
             }); 
+         const restricted = room.restriction;
+         if(restricted && restricted == true){
+           restrictedRooms.push(room);
+         }
         }); 
     console.log("History loaded from Firebase"); 
 });
@@ -158,6 +162,8 @@ class Account{
 }
 
 let aclist = [];
+
+
 
 function encodeLoginData(a, db){
   if (validateRoomName(a.user)){
@@ -301,7 +307,7 @@ server.on("connection", socket => {
             for (const line of history[user.prtag]) {
                 socket.send(line);
             }
-            socket.send("Note; Storage is limited...");
+            socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). ");
             firstmessage = false;
         }
 
@@ -427,6 +433,28 @@ server.on("connection", socket => {
               .once("value", snapshot => {
                   snapshot.forEach(child => child.ref.remove());
               });
+        }
+
+        //====================== RESTRICT ROOM =====================
+
+        if(msg == "/restrictroom" && user.admin){
+          if(!restrictedRooms.includes(user.prtag)){
+            restrictedRooms.push(user.prtag);
+          }
+          await db.ref("chatlogs/" + user.prtag).set({
+            restricted: true
+          });     
+        }
+
+        //======================= UNRESTRICT ROOM =====================
+        
+        if(msg == "/unrestrictroom" && user.admin){
+          if(restrictedRooms.includes(user.prtag)){
+            restrictedRooms = restrictedRooms.filter((restrictedRooms) => restrictedRooms !== user.prtag);
+          }
+          await db.ref("rooms/" + user.prtag).set({
+            restricted: false
+          });
         }
 
         // ===================== CLEAR HISTORY =====================
@@ -601,11 +629,17 @@ server.on("connection", socket => {
         taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
       }
 
+      if(restrictedRooms.include(user.prtag) && (!user.mod || !user.admin)){
+        socket.send("Room is restricted. Only staff may message here.");
+        return;
+      }
+
       const taggedMessage = JSON.stringify({
         message: taggedString,
         prtag: user.prtag,
         datatype: "chat"
       });
+
 
       history[user.prtag].push(taggedMessage);
 

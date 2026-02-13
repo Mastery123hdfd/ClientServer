@@ -52,6 +52,7 @@ function loadSession(token) {
 }
 
 
+const { useImperativeHandle } = require("react");
 const WebSocket = require("ws");
 
 const port = process.env.PORT || 10000;
@@ -409,14 +410,40 @@ server.on("connection", socket => {
 
             let acc = null;
             const snapshot = await db.ref("logindata/accountdata").once("value");
-
+            let newaccount = 0;
             snapshot.forEach(child => {
                 const val = child.val();
                 if (val.user === userin && val.pass === passin) {
                     acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
                 }
+                if(val.user === userin && val.pass !== passin){
+                    acc = null;
+                }
+                if(val.user !== userin && val.pass !== passin){
+                    newaccount++;
+                }
             });
 
+            if(newaccount >0){
+              ensureAccount(userin, passin);
+              acc = new Account(userin, passin, false, false, userin);
+              user.username = userin;
+              user.pass = passin;
+              user.moniker = userin;
+              user.admin = false;
+              user.mod = false;
+              user.loggedIn = true;
+              socket.send("New account created and logged in as " + userin);
+              
+              db.ref("logindata/accountdata/" + userin).set({
+                user: userin, 
+                pass: passin,   
+                disp: userin,
+                admin: false,
+                mod: false
+              });
+              return;
+            }
             if (!acc) {
                 socket.send("Incorrect sign-in data");
                 return;

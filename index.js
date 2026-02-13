@@ -647,10 +647,16 @@ server.on("connection", socket => {
         taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
       }
       socket.send("String generated");
-
+      if(!RestrictedRooms){
+        let restrictedRooms = [];
+      }
+      try{
       if(restrictedRooms.include(user.prtag) && (!user.mod || !user.admin)){
         socket.send("Room is restricted. Only staff may message here.");
         return;
+      }
+      } catch(err){
+        console.log("ERROR WITH RESTRICTED ROOMS");
       }
       socket.send("Message Generating");
       const taggedMessage = JSON.stringify({

@@ -26,7 +26,7 @@ setInterval(() => {
   const now = Date.now();
   const diff = now - last;
 
-  if (diff > 200) { // threshold for freeze detection
+  if (diff > 200) { 
     console.error("EVENT LOOP FREEZE DETECTED:", diff, "ms");
   }
 
@@ -326,12 +326,34 @@ server.on("connection", socket => {
   }).catch(err => console.error("Error updating login data:", err));
 
   // Update session only if token exists
-  if(user.sessionToken){
-    const a = new Account(user.username, user.pass, user.admin, user.mod, user.moniker);
-    updateSession(a, db, user.sessionToken).catch(err => {
-      console.error("Error updating session:", err);
-    });
+  if (data && data.type === "sessionrestart") {
+    token = data.token;
+    const session = await loadSession(token);
+
+    // Strong validation
+    if (!session || !session.username || !session.pass) {
+        socket.send("Invalid or expired session token");
+        return;
+    }
+
+    // Restore user state
+    user.username = session.username;
+    user.pass = session.pass;
+    user.admin = !!session.admin;
+    user.mod = !!session.mod;
+    user.moniker = session.disp || session.username;
+    user.loggedIn = true;
+    user.sessionToken = token;
+
+    // Ensure room exists
+    if (!history[user.prtag]) history[user.prtag] = [];
+
+    socket.send("Session restored for " + user.moniker);
+    console.log("Session restored for", user.moniker);
+
+    return;
   }
+
 
   return;
 }

@@ -278,8 +278,6 @@ server.on("connection", socket => {
 
     socket.on("message", async msg => {
     console.log("WS: raw message:", msg.toString());
-
-  
         if (!ensureRoom(user.prtag, user, socket)) return;
 
         let data = null;
@@ -398,75 +396,75 @@ server.on("connection", socket => {
             console.error("Login error:", err);
             return;
         }
-    }
-
-    if (!user.loggedIn) {
-        socket.send("Login required.");
-        return;
-    }
-
-    // ============================================================
-    // ======================= COMMAND MODE =======================
-    // ============================================================
-
-    if (command) {
-
-      // ===================== STRIKE MESSAGE =====================
-
-      if (msg == "/strikemsg") {
-
-        history[user.prtag].pop();
-        taggedMessage = JSON.stringify({ type: "strikemsg" });
-
-        db.ref("chatlog/" + user.prtag)
-            .limitToLast(1)
-            .once("value", snapshot => {
-                snapshot.forEach(child => child.ref.remove());
-            });
       }
 
-      // ===================== CLEAR HISTORY =====================
-
-      if (msg == "/clearhist" && user.admin) {
-
-        history[user.prtag] = [];
-        taggedMessage = JSON.stringify({ type: "clearHistory" });
-        db.ref("chatlog/" + user.prtag).remove();
-      }
-
-      // ===================== GET PRIVATE ROOM LIST =====================
-
-      if (msg == "/getprlist" && user.mod) {
-
-        socket.send("====Available Rooms====");
-
-        for (const p of Object.keys(history)) {
-            socket.send(p);
-        }
-      }
-
-      // ===================== GET HISTORY LENGTH =====================
-
-      if (msg === "/gethistlength" && user.admin) {
-
-          socket.send("=== /gethistlength DEBUG START ===");
-          socket.send("user.prtag:", user.prtag);
-          socket.send("type:", typeof history[user.prtag]);
-          socket.send("isArray:", Array.isArray(history[user.prtag]));
-          socket.send("=== /gethistlength DEBUG END ===");
-
-          if (!Array.isArray(history[user.prtag])) {
-              socket.send("Server error: history for room is not an array.");
-              return;
-          }
-
-          socket.send(String(history[user.prtag].length));
+      if (!user.loggedIn) {
+          socket.send("Login required.");
           return;
       }
 
-      // ===================== DELETE ROOM =====================
+      // ============================================================
+      // ======================= COMMAND MODE =======================
+      // ============================================================
 
-      if (msg == "/delroom" && user.admin) {
+      if (command) {
+
+        // ===================== STRIKE MESSAGE =====================
+
+        if (msg == "/strikemsg") {
+
+          history[user.prtag].pop();
+          taggedMessage = JSON.stringify({ type: "strikemsg" });
+
+          db.ref("chatlog/" + user.prtag)
+              .limitToLast(1)
+              .once("value", snapshot => {
+                  snapshot.forEach(child => child.ref.remove());
+              });
+        }
+
+        // ===================== CLEAR HISTORY =====================
+
+        if (msg == "/clearhist" && user.admin) {
+
+          history[user.prtag] = [];
+          taggedMessage = JSON.stringify({ type: "clearHistory" });
+          db.ref("chatlog/" + user.prtag).remove();
+        }
+
+        // ===================== GET PRIVATE ROOM LIST =====================
+
+        if (msg == "/getprlist" && user.mod) {
+
+          socket.send("====Available Rooms====");
+
+          for (const p of Object.keys(history)) {
+              socket.send(p);
+          }
+        }
+
+        // ===================== GET HISTORY LENGTH =====================
+
+        if (msg === "/gethistlength" && user.admin) {
+  
+            socket.send("=== /gethistlength DEBUG START ===");
+            socket.send("user.prtag:", user.prtag);
+            socket.send("type:", typeof history[user.prtag]);
+            socket.send("isArray:", Array.isArray(history[user.prtag]));
+            socket.send("=== /gethistlength DEBUG END ===");
+
+            if (!Array.isArray(history[user.prtag])) {
+              socket.send("Server error: history for room is not an array.");
+              return;
+            }
+
+            socket.send(String(history[user.prtag].length));
+            return;
+        }
+
+        // ===================== DELETE ROOM =====================
+
+        if (msg == "/delroom" && user.admin) {
 
           if (user.prtag == "main") {
 
@@ -496,11 +494,11 @@ server.on("connection", socket => {
               socket.send("Room removed; User moved to room 'main'");
               return;
           }
-      }
+        }
 
-      // ===================== GET PLAYER LOCATION =====================
+        // ===================== GET PLAYER LOCATION =====================
 
-      if (msg == "/getPlayerLoc" && user.admin) {
+        if (msg == "/getPlayerLoc" && user.admin) {
 
           for (const [client, cUser] of clients) {
               if (client.readyState === WebSocket.OPEN && cUser.active) {
@@ -510,35 +508,35 @@ server.on("connection", socket => {
           }
 
           return;
-      }
-
-      // ===================== GIVE SELF MOD =====================
-
-      if (msg == "/giveSelfMod" && user.admin) {
-        user.mod = true;
-      }
-
-      // ===================== GIVE OTHER MOD =====================
-
-      if (msg == "/giveOtherMod" && user.admin) {
-
-        socket.send("Please input the username of the user you wish to give mod privileges to");
-        user.awaitingModTarget = msg;
-        return;
         }
 
-        // ===================== GIVE OTHER ADMIN =====================
+        // ===================== GIVE SELF MOD =====================
 
-        if (msg == "/giveOtherAdmin" && user.admin) {
-
-            socket.send("Please input the username of the user you wish to give admin to");
-            user.awaitingAdminTarget = msg;
-        return;
+        if (msg == "/giveSelfMod" && user.admin) {
+          user.mod = true;
         }
 
-        // ===================== HANDLE ADMIN TARGET =====================
+        // ===================== GIVE OTHER MOD =====================
 
-        if (user.awaitingAdminTarget) {
+        if (msg == "/giveOtherMod" && user.admin) {
+
+          socket.send("Please input the username of the user you wish to give mod privileges to");
+          user.awaitingModTarget = msg;
+          return;
+          }
+
+          // ===================== GIVE OTHER ADMIN =====================
+
+          if (msg == "/giveOtherAdmin" && user.admin) {
+
+              socket.send("Please input the username of the user you wish to give admin to");
+              user.awaitingAdminTarget = msg;
+          return;
+          }
+
+          // ===================== HANDLE ADMIN TARGET =====================
+  
+          if (user.awaitingAdminTarget) {
 
             clients.forEach((cUser, client) => {
 
@@ -553,11 +551,11 @@ server.on("connection", socket => {
                     user.awaitingAdminTarget = null;
                 }
             });
-        }
+          }
 
-        // ===================== HANDLE MOD TARGET =====================
+          // ===================== HANDLE MOD TARGET =====================
 
-        if (user.awaitingModTarget) {
+          if (user.awaitingModTarget) {
 
             clients.forEach((cUser, client) => {
 
@@ -571,54 +569,54 @@ server.on("connection", socket => {
                     user.awaitingModTarget = null;
                 }
             });
-        }
+          }
 
-        // ===================== COMMAND MODE OFF =====================
+          // ===================== COMMAND MODE OFF =====================
 
-        if (msg == "/cmdoff") {
+          if (msg == "/cmdoff") {
 
             socket.send("Command Mode Deactivated");
             command = false;
             return;
-        }
-    }
+          }
+      }
 
-    // ===================== NORMAL CHAT =====================
+      // ===================== NORMAL CHAT =====================
 
-    const timestamp = new Date().toLocaleTimeString("en-US", {
+      const timestamp = new Date().toLocaleTimeString("en-US", {
         timeZone: "America/Chicago",
         hour12: true
-    });
+      });
 
-    let taggedString = `(${timestamp}) | ${user.moniker}: ${msg}`;
+      let taggedString = `(${timestamp}) | ${user.moniker}: ${msg}`;
 
-    if (user.admin) {
+      if (user.admin) {
         taggedString = `(${timestamp}) | [ADMIN] ${user.moniker}: ${msg}`;
-    } else if (user.mod) {
+      } else if (user.mod) {
         taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
-    }
+      }
 
-    const taggedMessage = JSON.stringify({
+      const taggedMessage = JSON.stringify({
         message: taggedString,
         prtag: user.prtag,
         datatype: "chat"
-    });
+      });
 
-    history[user.prtag].push(taggedMessage);
+      history[user.prtag].push(taggedMessage);
 
-    if (history[user.prtag].length > 200) {
+      if (history[user.prtag].length > 200) {
         history[user.prtag].shift();
-    }
+      }
 
-    db.ref("chatlog/" + user.prtag).push({ taggedMessage });
+      db.ref("chatlog/" + user.prtag).push({ taggedMessage });
 
-    for (const [client, cUser] of clients) {
+      for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
             client.send(taggedMessage);
         }
-    }
+      }
     
-  }
+    });
 
     
 

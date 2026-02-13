@@ -650,28 +650,32 @@ server.on("connection", socket => {
         socket.send("Room is restricted. Only staff may message here.");
         return;
       }
-
+      socket.send("Message Generating");
       const taggedMessage = JSON.stringify({
         message: taggedString,
         prtag: user.prtag,
         datatype: "chat"
       });
-
-
+      socket.send("Message Generated");
+      socket.send("Sending to history...");
       history[user.prtag].push(taggedMessage);
 
       if (history[user.prtag].length > 200) {
         history[user.prtag].shift();
       }
+      socket.send("History trimmed");
 
       db.ref("chatlog/" + user.prtag).push({ taggedMessage });
-
+      socket.send("Message being broadcasted");
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
           socket.send("normal msg sent");
             client.send(taggedMessage);
         }
       }
+
+      socket.send("Mesage broadcasted!");
+      return;
     
     });
 

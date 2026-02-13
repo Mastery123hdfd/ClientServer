@@ -168,7 +168,7 @@ let aclist = [];
 
 function encodeLoginData(a, db){
   if (validateRoomName(a.user)){
-    db.ref("logindata/accountdata/" + a.user).push({
+    db.ref("logindata/accountdata/" + a.user).set({
       user: a.user, 
       pass: a.pass, 
       admin: a.admin, 

@@ -443,7 +443,7 @@ server.on("connection", socket => {
         if (msg == "/strikemsg") {
           console.log("Striked 1");
           history[user.prtag].pop();
-          taggedMessage = JSON.stringify({ type: "strikemsg" });
+          let taggedMessage = JSON.stringify({ type: "strikemsg" });
           console.log("Console sent");
           db.ref("chatlog/" + user.prtag)
               .limitToLast(1)
@@ -481,7 +481,7 @@ server.on("connection", socket => {
         if (msg == "/clearhist" && user.admin) {
 
           history[user.prtag] = [];
-          taggedMessage = JSON.stringify({ type: "clearHistory" });
+          let taggedMessage = JSON.stringify({ type: "clearHistory" });
           db.ref("chatlog/" + user.prtag).remove();
         }
 
@@ -658,6 +658,15 @@ server.on("connection", socket => {
         console.log("ERROR WITH RESTRICTED ROOMS");
       }
       //socket.send("Message Generating");
+      if(taggedMessage){
+        for (const [client, cUser] of clients) {
+          if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+              client.send(taggedMessage);
+          }
+        }
+        return;
+      }
+      
       const taggedMessage = JSON.stringify({
         message: taggedString,
         prtag: user.prtag,

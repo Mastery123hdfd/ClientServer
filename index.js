@@ -353,7 +353,19 @@ server.on("connection", socket => {
             return;
         }
 
-      
+        //======================== CHANGE PRIVATE ROOM ======================
+        if(data && data.type === "changePrTag"){
+          const newPrTag = data.v1;
+          if (!validateRoomName(newPrTag)) {
+            socket.send("Invalid private room name.");
+            return;
+          }
+          
+          ensureRoom(newPrTag, user, socket);
+
+          user.prtag = newPrTag;
+          return;
+        }
 
       // ===================== HELP =====================
 
@@ -377,6 +389,8 @@ server.on("connection", socket => {
             user.moniker = "UNKNOWN";
             user.loggedIn = false;
             user.sessionToken = null;
+            socket.send("Logged out successfully");
+            return;
           }
 
       // ===================== LOGIN =====================

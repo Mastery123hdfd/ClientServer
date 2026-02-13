@@ -173,7 +173,7 @@ function updateLoginPermData(a, db,token){
   if(validateRoomName(a.user)){
     try{
       db.ref("logindata/accountdata").once("value", snapshot=>{
-        snapshot.forEach(child => {
+        (child => {
           const val = child.val();
           if(val.user === a.user && val.pass === a.pass){
             child.ref.update({
@@ -276,14 +276,14 @@ server.on("connection", socket => {
   //Message Handler==================================================
 
 
-    socket.on("message",async msg => {
-      console.log("WS: raw message:", msg.toString());
+    socket.on("message", async msg => {
+    console.log("WS: raw message:", msg.toString());
 
-        try{
+  
         if (!ensureRoom(user.prtag, user, socket)) return;
+
         let data = null;
         let raw = msg.toString();
-        
 
         if (raw.startsWith("{")) {
             try {
@@ -292,218 +292,96 @@ server.on("connection", socket => {
                 console.log("Invalid JSON from client:", raw);
             }
         }
-        
-        msg = data?.msg || raw;
 
-        if(msg == ""){
+        msg = data?.msg || raw;
+        if (msg === "") return;
+
+        user.active = true;
+
+        if (firstmessage) {
+            for (const line of history[user.prtag]) {
+                socket.send(line);
+            }
+            socket.send("Note; Storage is limited...");
+            firstmessage = false;
+        }
+
+        // ===================== NAME CHANGE =====================
+
+        if (user.newName) {
+            const newMoniker = msg?.trim();
+
+            if (!newMoniker || !validateRoomName(newMoniker)) {
+                socket.send("Invalid Moniker.");
+                user.newName = false;
+                return;
+            }
+
+            user.moniker = newMoniker;
+            user.newName = false;
+            socket.send("Name changed. New name: " + user.moniker);
             return;
         }
-        
-        user.active = true;
-        if(firstmessage){
-          ensureRoom(user.prtag,user,socket);
-          for (const line of history[user.prtag]) {
-             socket.send(line);
-          }
-          socket.send("Note; Storage is limited. Please try not to open any Private Rooms if you don't have to. Refer to /help for a list of commands.");
-          firstmessage = false;
-        }
-            
-        if(user.newName){
-  const newMoniker = msg?.trim();
-  if(!newMoniker || !validateRoomName(newMoniker)){
-    socket.send("Invalid Moniker. Use only letters, numbers, underscores, hyphens, 1-50 chars.");
-    user.newName = false;
-    return;
-  }
 
-  user.moniker = newMoniker;
-  user.newName = false;
-  socket.send("Name changed. New name: " + user.moniker);
-  // Update Firebase account data
-  db.ref("logindata/accountdata").once("value").then(snapshot => {
-    snapshot.forEach(child => {
-      const val = child.val();
-      if(val.user === user.username){ 
-        child.ref.update({ disp: newMoniker });
-      }
-    });
-  }).catch(err => console.error("Error updating login data:", err));
+        // ===================== SESSION RESTORE =====================
 
-  // Update session only if token exists
-  if (data && data.type === "sessionrestart") {
-    token = data.token;
-    const session = await loadSession(token);
-
-    // Strong validation
-    if (!session || !session.username || !session.pass) {
-        socket.send("Invalid or expired session token");
-        return;
-    }
-
-    // Restore user state
-    user.username = session.username;
-    user.pass = session.pass;
-    user.admin = !!session.admin;
-    user.mod = !!session.mod;
-    user.moniker = session.disp || session.username;
-    user.loggedIn = true;
-    user.sessionToken = token;
-
-    // Ensure room exists
-    if (!history[user.prtag]) history[user.prtag] = [];
-
-    socket.send("Session restored for " + user.moniker);
-    console.log("Session restored for", user.moniker);
-
-    return;
-  }
-
-
-  return;
-}
-        const now = new Date();
-        const timestamp = now.toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
         if (data && data.type === "sessionrestart") {
-            token = data.token;
+            const token = data.token;
             const session = await loadSession(token);
 
-            if (!session) {
-              return;
-            }
-            if(session.moniker == "UNKNOWN"){
-              socket.send("INVALID SESSION DATA. Session data must include a valid moniker. UNKNOWN is an undefined moniker. Connection closing.");
-              msg = "/logout";
-            }
-            user.username = session.username;
-            user.pass = session.pass || loginfo[session.username];
+            if (!session) return;
 
-            db.ref("sessions/" + token).set({
-              username: user.username,
-              pass: user.pass,
-              admin: user.admin,
-              mod: user.mod,
-              disp: user.moniker,
-              timestamp: Date.now()
-            });
-            user.moniker = session.disp || session.username;
-             user.loggedIn = true;
-             user.admin = !!session.admin;
+            user.username = session.username;
+            user.pass = session.pass;
+            user.admin = !!session.admin;
             user.mod = !!session.mod;
+            user.moniker = session.disp || session.username;
+            user.loggedIn = true;
             user.sessionToken = token;
-            if (!history[user.prtag]) history[user.prtag] = [];
 
             socket.send("Session restored for " + user.moniker);
-             console.log("Session restored for", user.moniker);
             return;
-
-      }
-        } catch(err){
-          console.error("Error restoring session:", err);
         }
 
-        if(msg=="/help"){
-          for(k of cmdliststring){
+      
+
+      // ===================== HELP =====================
+
+      if (msg === "/help") {
+        for (const k of cmdliststring) {
             socket.send(k);
-          }
-          return;
         }
-        if(msg == "/loginhelp"){
-          socket.send("Step 1: Input /login");
-          socket.send("Step 2: Input username (E.X. testUser1)");
-          socket.send("Step 3: Input password (E.X. 101)");
-          socket.send("Use the login info given to you by a moderator or admin to login.");
-          socket.send("NOTE: This system is temporary, a better login system is currently being developed.");
-        }
-        if(msg=="/logout"){
-          user.loggedIn = false;
-          user.mod = false;
-          user.admin = false;
-          if(user.sessionToken){
-            db.ref("sessions/" + user.sessionToken).remove();
-            user.sessionToken = null;
-          }
-          socket.send("Permissions and flags cleared");
-          return;
-        }
-        if((msg == "/changename" || msg == "/changemoniker" ) && user.loggedIn){
+        return;
+      }
 
-            socket.send("Please input your new username");   
-            user.newName = true;
-            return;
-        }
-        else if(!user.loggedIn && (msg == "/changename" || msg == "/changemoniker")) {
-          socket.send("Please login first.");
-          return;
-        }
-        if (data && data.type === "changePrTag") {
-            const room = data.v1;
+      // ===================== LOGIN =====================
 
-            if (!validateRoomName(room)) {
-                socket.send("Invalid room name. Use only letters, numbers, underscores, and hyphens.");
-                return;
-            }
-
-            if (!ensureRoom(room, user, socket)) {
-                return;
-            }
-
-            user.prtag = room;
-
-            socket.send(JSON.stringify({ type: "clearHistory" }));
-               // Send room history
-            for (const line of history[room]) {
-               socket.send(line);
-            }
-
-            return;
-          }
       if (data && data.type === "login") {
-        console.log("login attempt detected, processing login data...");
-        socket.send("Login Attempt Detected; Processing Login Data");
-        try{
-          socket.send("Login Data received; Beginning Login Process");
+        try {
+            socket.send("Processing login...");
 
-          const userin = data.v1;
-          const passin = data.v2;
+            const userin = data.v1;
+            const passin = data.v2;
 
-          if (user.loggedIn) {
-            socket.send("Error: User already logged in");
-            return;
-          }
-
-          let acc = null;
-          try {
-            const snapshot = await db.ref("logindata/accountdata").once("value");
-            snapshot.forEach(child => {
-            const val = child.val();
-              if (val.user === userin && val.pass === passin) {
-                acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
-              }
-            });
-          } catch (err) {
-            console.error("Error accessing login data:", err);
-            socket.send("Server error during login. Please try again later.");
-            return;
-          }
-
-          if (!acc) {
-            const created = ensureAccount(userin, passin);
-            if (!created) {
-              socket.send("Incorrect sign-in data");
-              return;
+            if (user.loggedIn) {
+                socket.send("Already logged in");
+                return;
             }
 
-            acc = new Account(userin, passin, false, false, userin);
-            user.username = acc.user;
-            user.pass = acc.pass;
-            user.moniker = acc.disp;
-            user.admin = false;
-            user.mod = false;
-            user.loggedIn = true;
+            let acc = null;
+            const snapshot = await db.ref("logindata/accountdata").once("value");
 
-            socket.send("Account created. Logged in as normal user. Please note: Accounts cannot have username UNKNOWN. If this happens, please make a new account.");
-          } else {
+            snapshot.forEach(child => {
+                const val = child.val();
+                if (val.user === userin && val.pass === passin) {
+                    acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
+                }
+            });
+
+            if (!acc) {
+                socket.send("Incorrect sign-in data");
+                return;
+            }
 
             user.username = acc.user;
             user.pass = acc.pass;
@@ -512,234 +390,235 @@ server.on("connection", socket => {
             user.mod = !!acc.mod;
             user.loggedIn = true;
 
-            if (user.admin) socket.send("WELCOME ADMINISTRATOR.");
-            else if (user.mod) socket.send("Welcome Moderator.");
-          }
+            socket.send("Login successful");
 
-
-          if (!user.sessionToken) {
-            const token = Math.random().toString(36).slice(2);
-            user.sessionToken = token;
-
-            await db.ref("sessions/" + token).set({
-              username: user.username,
-              pass: user.pass,
-              admin: user.admin,
-              mod: user.mod,
-              disp: user.moniker,
-              timestamp: Date.now()
-            });
-
-            socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
-            socket.send("Session token created");
-          }
-
-          return;
-        
-      } catch(err){
-        console.error("Error during login process:", err);
-        socket.send("Server error during login. Please try again later.");
-        return;
-      } 
-      }
-
-      if(user.loggedIn == false){
-            socket.send("Login required; create an account or log in to chat.");
             return;
+
+        } catch (err) {
+            console.error("Login error:", err);
+            return;
+        }
+    }
+
+    if (!user.loggedIn) {
+        socket.send("Login required.");
+        return;
+    }
+
+    // ============================================================
+    // ======================= COMMAND MODE =======================
+    // ============================================================
+
+    if (command) {
+
+      // ===================== STRIKE MESSAGE =====================
+
+      if (msg == "/strikemsg") {
+
+        history[user.prtag].pop();
+        taggedMessage = JSON.stringify({ type: "strikemsg" });
+
+        db.ref("chatlog/" + user.prtag)
+            .limitToLast(1)
+            .once("value", snapshot => {
+                snapshot.forEach(child => child.ref.remove());
+            });
       }
 
-        if(msg == "/getplayers"){
-          for (const [client, cUser] of clients) {
-            if (client.readyState === WebSocket.OPEN && cUser.active) {
-                socket.send(cUser.moniker);
-            }
+      // ===================== CLEAR HISTORY =====================
+
+      if (msg == "/clearhist" && user.admin) {
+
+        history[user.prtag] = [];
+        taggedMessage = JSON.stringify({ type: "clearHistory" });
+        db.ref("chatlog/" + user.prtag).remove();
+      }
+
+      // ===================== GET PRIVATE ROOM LIST =====================
+
+      if (msg == "/getprlist" && user.mod) {
+
+        socket.send("====Available Rooms====");
+
+        for (const p of Object.keys(history)) {
+            socket.send(p);
+        }
+      }
+
+      // ===================== GET HISTORY LENGTH =====================
+
+      if (msg === "/gethistlength" && user.admin) {
+
+          socket.send("=== /gethistlength DEBUG START ===");
+          socket.send("user.prtag:", user.prtag);
+          socket.send("type:", typeof history[user.prtag]);
+          socket.send("isArray:", Array.isArray(history[user.prtag]));
+          socket.send("=== /gethistlength DEBUG END ===");
+
+          if (!Array.isArray(history[user.prtag])) {
+              socket.send("Server error: history for room is not an array.");
+              return;
           }
+
+          socket.send(String(history[user.prtag].length));
           return;
-        }
-        if(msg == "/cmd"){ 
-                if(user.mod || user.admin){
-                    command = true;
-                    socket.send("Command Mode Activated");
-                    return;
-                }
-                else{
-                    socket.send("you do not have permission to use this command");
-                    return;
-                }
-            }
-            const moniker = user.moniker;
-            let taggedString = "";
-            if(user.mod){
-                taggedString = `(${timestamp}) | [MOD] ${moniker}: ${msg}`;
-            }
-            if(user.admin){
-                    taggedString = `(${timestamp}) | [ADMIN] ${moniker}: ${msg}`;
-            }
-            if(!user.admin && !user.mod){
-                 taggedString= `(${timestamp}) | ${moniker}: ${msg}`;
-            }
-        
-            let taggedMessage = null;
-            if(command){
-                if(msg == "/strikemsg"){
-                    history[user.prtag].pop();
-                    taggedMessage = (JSON.stringify({type:"strikemsg"}));
-                    try{
-                     db.ref("chatlog/" + user.prtag).limitToLast(1).once("value", snapshot => {
-                     snapshot.forEach(child => child.ref.remove());
-                    });
-                    } catch(err) {
-                      console.error("Error removing last message:", err);
-                    }
-                }
-                if (msg == "/clearhist" && user.admin) {
-                    history[user.prtag] = [];
-                    taggedMessage = JSON.stringify({ type: "clearHistory" });
-                    db.ref("chatlog/" + user.prtag).remove();
-                }
-                if(msg == "/getprlist" && user.mod){
-                    socket.send("====Available Rooms====");
-                    for (const p of Object.keys(history)) {
-                        socket.send(p);
-                    }
-                }
-                if (msg === "/gethistlength" && user.admin) {
-                  /*socket.send("=== /gethistlength DEBUG START ===");
-                  socket.send("user.prtag:" + user.prtag);
-                  socket.send("type:" + typeof history[user.prtag]);
-                  socket.send("isArray:" + Array.isArray(history[user.prtag]));
-                  socket.send("=== /gethistlength DEBUG END ===");*/
-                  socket.send("Length: " + history[user.prtag].length);
-                  return; 
-                }
-                if(msg=="/delroom" && user.admin){
-                  if(user.prtag == "main"){
-                    socket.send("Room 'main' cannot be removed");
-                    return;
-                  } else{
-                    let previoustag = user.prtag;
-                    user.prtag = "main";
-                    socket.send(JSON.stringify({ type: "clearHistory" }));
-                    for (const line of history["main"]) {
-                       socket.send(line);
-                    }
-                    for(const [client, cUser] of clients){
-                      if(cUser.prtag == previoustag){
-                        cUser.prtag = "main";
-                      }
-                    }
-                    db.ref("chatlog/" + previoustag).remove();
-                    delete history[previoustag];
-                    socket.send("Room removed; User moved to room 'main'");
-                    return;
-                  }
-                }
-                if(msg == "/getPlayerLoc" && user.admin){
-                  for (const [client, cUser] of clients) {
-                    if (client.readyState === WebSocket.OPEN && cUser.active) {
-                      socket.send(cUser.moniker);
-                      socket.send(cUser.prtag);
-                      
-                    }
-                  }
-                  return;
-                }
-                if(msg == "/giveSelfMod" && user.admin){
-                  user.mod = true;
-                  let a = new Account(user.username, user.pass, true, true, user.moniker);
-                  updateLoginPermData(a, db);
-                  updateSession(a,db,token);
-                }
-                if(msg =="/giveOtherMod" && user.admin){
-                    socket.send("Please input the username of the user you wish to give mod privileges to");
-                    user.awaitingModTarget = true;
-                    return;
-                }
-                if(msg== "/giveOtherAdmin" && user.admin){
-                    socket.send("Please input the username of the user you wish to give admin to");
-                    user.awaitingAdminTarget = true;
-                    return;
-                }
-                if(user.awaitingAdminTarget){
-                    clients.forEach((cUser, client) => {
-                        if(cUser.moniker === msg){
-                            cUser.admin = true;
-                            cUser.mod = true;
-                            client.send("You have been given admin privileges by " + user.moniker);
-                            socket.send("Admin privileges given to " + msg);
-                            user.awaitingAdminTarget = false;
-                            let a = new Account(cUser.username, client.pass, true, true, cUser.moniker);
-                            client.send("1");
-                            socket.send("0");
-                            updateLoginPermData(a, db);
-                            updateSession(a,db,token);
-                        }
-                    });
-                }
-                if(user.awaitingModTarget){
-                    clients.forEach((cUser, client) => {
-                        if(cUser.moniker === msg){
-                            cUser.mod = true;
-                            client.send("You have been given mod privileges by " + user.moniker);
-                            socket.send("Mod privileges given to " + msg);
-                            user.awaitingModTarget = false;
-                            let a = new Account(cUser.username, client.pass, cUser.admin, true, cUser.moniker);
-                            updateLoginPermData(a, db);
-                           updateSession(a,db,token);
-                        }
-                    });
-                }
-                
-                
-                if(msg == "/cmdoff"){
-                    socket.send("Command Mode Deactivated");
-                    command = false;
-                    return;
-                }
-            }
-        if(taggedMessage) {
-            ensureRoom(user.prtag,user,socket);
-            history[user.prtag].push(taggedMessage);
+      }
 
-            db.ref("chatlog/" + user.prtag).push({ taggedMessage });
-            for (const [client] of clients) {
-                client.send(taggedMessage);
-            }
+      // ===================== DELETE ROOM =====================
+
+      if (msg == "/delroom" && user.admin) {
+
+          if (user.prtag == "main") {
+
+            socket.send("Room 'main' cannot be removed");
+            return;
+
+          } else {
+
+              let previoustag = user.prtag;
+              user.prtag = "main";
+
+              socket.send(JSON.stringify({ type: "clearHistory" }));
+
+              for (const line of history["main"]) {
+                  socket.send(line);
+              }
+
+              for (const [client, cUser] of clients) {
+                  if (cUser.prtag == previoustag) {
+                      cUser.prtag = "main";
+                  }
+              }
+  
+              db.ref("chatlog/" + previoustag).remove();
+              delete history[previoustag];
+  
+              socket.send("Room removed; User moved to room 'main'");
+              return;
+          }
+      }
+
+      // ===================== GET PLAYER LOCATION =====================
+
+      if (msg == "/getPlayerLoc" && user.admin) {
+
+          for (const [client, cUser] of clients) {
+              if (client.readyState === WebSocket.OPEN && cUser.active) {
+                  socket.send(cUser.moniker);
+                  socket.send(cUser.prtag);
+              }
+          }
+
           return;
+      }
+
+      // ===================== GIVE SELF MOD =====================
+
+      if (msg == "/giveSelfMod" && user.admin) {
+        user.mod = true;
+      }
+
+      // ===================== GIVE OTHER MOD =====================
+
+      if (msg == "/giveOtherMod" && user.admin) {
+
+        socket.send("Please input the username of the user you wish to give mod privileges to");
+        user.awaitingModTarget = msg;
+        return;
         }
 
-        taggedMessage = (JSON.stringify({
-            message:taggedString,
-            prtag: user.prtag,
-            datatype:"chat"
-        }));
-        
-        
+        // ===================== GIVE OTHER ADMIN =====================
 
-        console.log("Broadcast:", taggedString);
+        if (msg == "/giveOtherAdmin" && user.admin) {
 
-        ensureRoom(user.prtag,user,socket);
-      
-        history[user.prtag].push(taggedMessage);
-
-        if (history[user.prtag].length > 200) {
-            history[user.prtag].shift();
+            socket.send("Please input the username of the user you wish to give admin to");
+            user.awaitingAdminTarget = msg;
+        return;
         }
 
-        db.ref("chatlog/" + user.prtag).push({taggedMessage});
-        // Broadcast to all clients
-        const parsed = JSON.parse(taggedMessage);
+        // ===================== HANDLE ADMIN TARGET =====================
 
-        for (const [client, cUser] of clients) {
-            if (client.readyState === WebSocket.OPEN && cUser.prtag === parsed.prtag) {
-                setImmediate(() => {
-                  try { client.send(taggedMessage); } catch (err) {
-//
-                  }   
-              });
-            }
+        if (user.awaitingAdminTarget) {
+
+            clients.forEach((cUser, client) => {
+
+                if (cUser.moniker === msg) {
+
+                    cUser.admin = true;
+                    cUser.mod = true;
+
+                    client.send("You have been given admin privileges by " + user.moniker);
+                    socket.send("Admin privileges given to " + user.awaitingAdminTarget);
+
+                    user.awaitingAdminTarget = null;
+                }
+            });
         }
+
+        // ===================== HANDLE MOD TARGET =====================
+
+        if (user.awaitingModTarget) {
+
+            clients.forEach((cUser, client) => {
+
+                if (cUser.moniker === msg) {
+
+                    cUser.mod = true;
+
+                    client.send("You have been given mod privileges by " + user.moniker);
+                    socket.send("Mod privileges given to " + user.awaitingModTarget);
+
+                    user.awaitingModTarget = null;
+                }
+            });
+        }
+
+        // ===================== COMMAND MODE OFF =====================
+
+        if (msg == "/cmdoff") {
+
+            socket.send("Command Mode Deactivated");
+            command = false;
+            return;
+        }
+    }
+
+    // ===================== NORMAL CHAT =====================
+
+    const timestamp = new Date().toLocaleTimeString("en-US", {
+        timeZone: "America/Chicago",
+        hour12: true
     });
+
+    let taggedString = `(${timestamp}) | ${user.moniker}: ${msg}`;
+
+    if (user.admin) {
+        taggedString = `(${timestamp}) | [ADMIN] ${user.moniker}: ${msg}`;
+    } else if (user.mod) {
+        taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
+    }
+
+    const taggedMessage = JSON.stringify({
+        message: taggedString,
+        prtag: user.prtag,
+        datatype: "chat"
+    });
+
+    history[user.prtag].push(taggedMessage);
+
+    if (history[user.prtag].length > 200) {
+        history[user.prtag].shift();
+    }
+
+    db.ref("chatlog/" + user.prtag).push({ taggedMessage });
+
+    for (const [client, cUser] of clients) {
+        if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+            client.send(taggedMessage);
+        }
+    }
+    
+  }
 
     
 

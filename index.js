@@ -426,7 +426,10 @@ server.on("connection", socket => {
             user.newName = true;
             return;
         }
-        else if(!user.loggedIn) socket.send("Please login first.");
+        else if(!user.loggedIn && (msg == "/changename" || msg == "/changemoniker")) {
+          socket.send("Please login first.");
+          return;
+        }
         if (data && data.type === "changePrTag") {
             const room = data.v1;
 

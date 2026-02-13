@@ -426,6 +426,7 @@ server.on("connection", socket => {
             user.newName = true;
             return;
         }
+        else if(!user.loggedIn) socket.send("Please login first.");
         if (data && data.type === "changePrTag") {
             const room = data.v1;
 
@@ -449,6 +450,7 @@ server.on("connection", socket => {
             return;
           }
       if (data && data.type === "login") {
+        blah blah blah this is gonna crash the server but its fine its on purpose
         try{
           socket.send("Login Data received; Beginning Login Process");
 

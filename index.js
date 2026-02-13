@@ -498,18 +498,18 @@ server.on("connection", socket => {
 
         if (msg === "/gethistlength" && user.admin) {
   
-            socket.send("=== /gethistlength DEBUG START ===");
+            /*socket.send("=== /gethistlength DEBUG START ===");
             socket.send("user.prtag:", user.prtag);
             socket.send("type:", typeof history[user.prtag]);
             socket.send("isArray:", Array.isArray(history[user.prtag]));
-            socket.send("=== /gethistlength DEBUG END ===");
+            socket.send("=== /gethistlength DEBUG END ===");*/
 
             if (!Array.isArray(history[user.prtag])) {
               socket.send("Server error: history for room is not an array.");
               return;
             }
 
-            socket.send(String(history[user.prtag].length));
+            socket.send("Length: " + history[user.prtag].length);
             return;
         }
 
@@ -646,7 +646,7 @@ server.on("connection", socket => {
       } else if (user.mod) {
         taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
       }
-      socket.send("String generated");
+      //socket.send("String generated");
       if(!restrictedRooms){
         let restrictedRooms = [];
       }
@@ -658,23 +658,23 @@ server.on("connection", socket => {
       } catch(err){
         console.log("ERROR WITH RESTRICTED ROOMS");
       }
-      socket.send("Message Generating");
+      //socket.send("Message Generating");
       const taggedMessage = JSON.stringify({
         message: taggedString,
         prtag: user.prtag,
         datatype: "chat"
       });
-      socket.send("Message Generated");
-      socket.send("Sending to history...");
+     // socket.send("Message Generated");
+      //socket.send("Sending to history...");
       history[user.prtag].push(taggedMessage);
 
       if (history[user.prtag].length > 200) {
         history[user.prtag].shift();
       }
-      socket.send("History trimmed");
+      //socket.send("History trimmed");
 
       db.ref("chatlog/" + user.prtag).push({ taggedMessage });
-      socket.send("Message being broadcasted");
+      //socket.send("Message being broadcasted");
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
           socket.send("normal msg sent");
@@ -682,7 +682,7 @@ server.on("connection", socket => {
         }
       }
 
-      socket.send("Mesage broadcasted!");
+      //socket.send("Mesage broadcasted!");
       return;
     
     });

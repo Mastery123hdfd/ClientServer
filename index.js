@@ -124,8 +124,8 @@ history["main"] = [];
 
 
 function ensureRoom(tag, user, socket) {
-  socket.send(JSON.stringify({ type: "clearHistoryChatless" }));
     if (!Array.isArray(history[tag])) {
+      socket.send(JSON.stringify({ type: "clearHistoryChatless" }));
         if(user.mod || user.admin){
             history[tag] = [];
             return true;
@@ -647,9 +647,6 @@ server.on("connection", socket => {
         taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
       }
       //socket.send("String generated");
-      if(!restrictedRooms){
-        let restrictedRooms = [];
-      }
       try{
       if(restrictedRooms.includes(user.prtag) && (!user.mod || !user.admin)){
         socket.send("Room is restricted. Only staff may message here.");
@@ -677,7 +674,6 @@ server.on("connection", socket => {
       //socket.send("Message being broadcasted");
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
-          socket.send("normal msg sent");
             client.send(taggedMessage);
         }
       }

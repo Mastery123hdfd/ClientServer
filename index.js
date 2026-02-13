@@ -34,13 +34,7 @@ setInterval(() => {
   last = now;
 }, 100);
 
-let heartbeat= true;
-if(heartbeat){
-  setInterval(() => {
-    const now = new Date().toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
-    console.log("No crash detected:", now);
-  }, 5000);
-}
+
 
 admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
@@ -465,7 +459,8 @@ server.on("connection", socket => {
             return;
           }
       if (data && data.type === "login") {
-        console.log("login attempte detected, processing login data... \nUsername:", data.v1, "\nPassword:", data.v2);
+        console.log("login attempt detected, processing login data...");
+        socket.send("Login Attempt Detected; Processing Login Data");
         try{
           socket.send("Login Data received; Beginning Login Process");
 

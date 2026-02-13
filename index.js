@@ -27,12 +27,12 @@ setInterval(() => {
   const now = Date.now();
   const diff = now - last;
 
-  if (diff > 200) { 
+  if (diff > 1000) { 
     console.error("EVENT LOOP FREEZE DETECTED:", diff, "ms");
   }
 
   last = now;
-}, 100);
+}, 500);
 
 
 
@@ -224,6 +224,10 @@ async function updateSession(a, db, token){
  }
 }
 
+function convertUsertoAccount(user){
+  return new Account(user.username, user.pass, user.admin, user.mod, user.moniker);
+}
+
 aclist = [];
 modArray = [];
 adminArray = [];
@@ -325,6 +329,7 @@ server.on("connection", socket => {
             user.moniker = newMoniker;
             user.newName = false;
             socket.send("Name changed. New name: " + user.moniker);
+            sessionUpdate(user, db, user.sessionToken);
             return;
         }
 
@@ -444,6 +449,11 @@ server.on("connection", socket => {
           console.log("Striked 1");
           history[user.prtag].pop();
           let taggedMessage = JSON.stringify({ type: "strikemsg" });
+          for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+              client.send(taggedMessage);
+            }
+          }
           console.log("Console sent");
           db.ref("chatlog/" + user.prtag)
               .limitToLast(1)
@@ -452,6 +462,7 @@ server.on("connection", socket => {
               });
           console.log("Message removed from memory.");
           socket.send("Message Removed.");
+          return;
         }
 
         //====================== RESTRICT ROOM =====================
@@ -460,9 +471,11 @@ server.on("connection", socket => {
           if(!restrictedRooms.includes(user.prtag)){
             restrictedRooms.push(user.prtag);
           }
+          
           await db.ref("chatlog/" + user.prtag).set({
             restricted: true
           });     
+          return;
         }
 
         //======================= UNRESTRICT ROOM =====================
@@ -474,6 +487,8 @@ server.on("connection", socket => {
           await db.ref("room/" + user.prtag).set({
             restricted: false
           });
+
+          return;
         }
 
         // ===================== CLEAR HISTORY =====================
@@ -482,7 +497,13 @@ server.on("connection", socket => {
 
           history[user.prtag] = [];
           let taggedMessage = JSON.stringify({ type: "clearHistory" });
+          for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+              client.send(taggedMessage);
+            }
+          }
           db.ref("chatlog/" + user.prtag).remove();
+          return;
         }
 
         // ===================== GET PRIVATE ROOM LIST =====================
@@ -494,6 +515,7 @@ server.on("connection", socket => {
           for (const p of Object.keys(history)) {
               socket.send(p);
           }
+          return;
         }
 
         // ===================== GET HISTORY LENGTH =====================
@@ -567,6 +589,8 @@ server.on("connection", socket => {
 
         if (msg == "/giveSelfMod" && user.admin) {
           user.mod = true;
+          updateLoginPermData(user, db);
+          return;
         }
 
         // ===================== GIVE OTHER MOD =====================
@@ -576,8 +600,8 @@ server.on("connection", socket => {
           socket.send("Please input the username of the user you wish to give mod privileges to");
           user.awaitingModTarget = true;
           return;
-          }
-
+        }
+//Random indent for some reason?
           // ===================== GIVE OTHER ADMIN =====================
 
           if (msg == "/giveOtherAdmin" && user.admin) {
@@ -600,7 +624,7 @@ server.on("connection", socket => {
 
                     client.send("You have been given admin privileges by " + user.moniker);
                     socket.send("Admin privileges given to " + user.awaitingAdminTarget);
-                    updateLoginPerms(cUser, db);
+                    updateLoginPermData(cUser, db);
 
                     user.awaitingAdminTarget = false;
                 }
@@ -619,7 +643,7 @@ server.on("connection", socket => {
 
                     client.send("You have been given mod privileges by " + user.moniker);
                     socket.send("Mod privileges given to " + user.awaitingModTarget);
-                    updateLoginPerms(cUser, db);
+                    updateLoginPermData(cUser, db);
                     user.awaitingModTarget = false;
                 }
             });

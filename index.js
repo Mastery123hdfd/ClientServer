@@ -42,7 +42,7 @@ const WebSocket = require("ws");
 const port = process.env.PORT || 10000;
 const server = new WebSocket.Server({ port });
 
-console.log("WebSocket server running on port", port);
+console.log("WebSocket server running on port", String(port).replace(/\n|\r/g, ""));
 
 // Store monikers for each client
 const clients = new Map();

@@ -396,7 +396,20 @@ server.on("connection", socket => {
             user.loggedIn = true;
 
             socket.send("Login successful");
-
+          
+            // ======== Token Creation ========
+          
+            const token = require("crypto").randomBytes(16).toString("hex");
+            db.ref("sessions/" + token).set({
+              username: acc.user,
+              pass: acc.pass,
+              admin: acc.admin,
+              mod: acc.mod,
+              disp: acc.disp
+            });
+            user.sessionToken = token;
+            socket.send(JSON.stringify({type: "sessionToken", tokenid = token}));
+            socket.send("Session token sucessfully created!");
             return;
 
         } catch (err) {

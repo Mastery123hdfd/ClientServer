@@ -668,6 +668,7 @@ server.on("connection", socket => {
 
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+          socket.send("normal msg sent");
             client.send(taggedMessage);
         }
       }

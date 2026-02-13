@@ -441,15 +441,17 @@ server.on("connection", socket => {
         // ===================== STRIKE MESSAGE =====================
 
         if (msg == "/strikemsg") {
-
+          console.log("Striked 1");
           history[user.prtag].pop();
           taggedMessage = JSON.stringify({ type: "strikemsg" });
-
+          console.log("Console sent");
           db.ref("chatlog/" + user.prtag)
               .limitToLast(1)
               .once("value", snapshot => {
                   snapshot.forEach(child => child.ref.remove());
               });
+          console.log("Message removed from memory.");
+          socket.send("Message Removed.");
         }
 
         //====================== RESTRICT ROOM =====================

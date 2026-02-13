@@ -450,7 +450,7 @@ server.on("connection", socket => {
             return;
           }
       if (data && data.type === "login") {
-        blah blah blah this is gonna crash the server but its fine its on purpose
+        console.log("login attempte detected, processing login data... \nUsername:", data.v1, "\nPassword:", data.v2);
         try{
           socket.send("Login Data received; Beginning Login Process");
 

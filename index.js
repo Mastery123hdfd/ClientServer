@@ -331,7 +331,7 @@ server.on("connection", socket => {
             socket.send("Name changed. New name: " + user.moniker);
             sessionUpdate(user, db, user.sessionToken);
             return;
-        }
+          }
 
         // ===================== SESSION RESTORE =====================
 
@@ -363,6 +363,21 @@ server.on("connection", socket => {
         }
         return;
       }
+
+      // ===================== LOG OUT =====================
+
+      if (msg == "/logout") {
+            if (user.sessionToken) {
+                db.ref("sessions/" + user.sessionToken).remove();
+            }
+            user.username = null;
+            user.pass = null;
+            user.admin = false;
+            user.mod = false;
+            user.moniker = "UNKNOWN";
+            user.loggedIn = false;
+            user.sessionToken = null;
+          }
 
       // ===================== LOGIN =====================
 

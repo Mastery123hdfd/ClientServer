@@ -176,7 +176,7 @@ function encodeLoginData(a, db){
     }); 
   }
 }
-function updateLoginPermData(a, db,token){
+function updateLoginPermData(a, db){
   if(validateRoomName(a.user)){
     try{
       db.ref("logindata/accountdata").once("value", snapshot=>{
@@ -460,7 +460,7 @@ server.on("connection", socket => {
           if(!restrictedRooms.includes(user.prtag)){
             restrictedRooms.push(user.prtag);
           }
-          await db.ref("chatlogs/" + user.prtag).set({
+          await db.ref("chatlog/" + user.prtag).set({
             restricted: true
           });     
         }
@@ -471,7 +471,7 @@ server.on("connection", socket => {
           if(restrictedRooms.includes(user.prtag)){
             restrictedRooms = restrictedRooms.filter((restrictedRooms) => restrictedRooms !== user.prtag);
           }
-          await db.ref("rooms/" + user.prtag).set({
+          await db.ref("room/" + user.prtag).set({
             restricted: false
           });
         }
@@ -574,7 +574,7 @@ server.on("connection", socket => {
         if (msg == "/giveOtherMod" && user.admin) {
 
           socket.send("Please input the username of the user you wish to give mod privileges to");
-          user.awaitingModTarget = msg;
+          user.awaitingModTarget = true;
           return;
           }
 
@@ -583,7 +583,7 @@ server.on("connection", socket => {
           if (msg == "/giveOtherAdmin" && user.admin) {
 
               socket.send("Please input the username of the user you wish to give admin to");
-              user.awaitingAdminTarget = msg;
+              user.awaitingAdminTarget = true;
           return;
           }
 
@@ -600,8 +600,9 @@ server.on("connection", socket => {
 
                     client.send("You have been given admin privileges by " + user.moniker);
                     socket.send("Admin privileges given to " + user.awaitingAdminTarget);
+                    updateLoginPerms(cUser, db);
 
-                    user.awaitingAdminTarget = null;
+                    user.awaitingAdminTarget = false;
                 }
             });
           }
@@ -618,8 +619,8 @@ server.on("connection", socket => {
 
                     client.send("You have been given mod privileges by " + user.moniker);
                     socket.send("Mod privileges given to " + user.awaitingModTarget);
-
-                    user.awaitingModTarget = null;
+                    updateLoginPerms(cUser, db);
+                    user.awaitingModTarget = false;
                 }
             });
           }
@@ -650,7 +651,7 @@ server.on("connection", socket => {
       }
       //socket.send("String generated");
       try{
-      if(restrictedRooms.includes(user.prtag) && (!user.mod || !user.admin)){
+      if(restrictedRooms.includes(user.prtag) && !(user.mod || user.admin)){
         socket.send("Room is restricted. Only staff may message here.");
         return;
       }
@@ -658,14 +659,7 @@ server.on("connection", socket => {
         console.log("ERROR WITH RESTRICTED ROOMS");
       }
       //socket.send("Message Generating");
-      if(taggedMessage){
-        for (const [client, cUser] of clients) {
-          if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
-              client.send(taggedMessage);
-          }
-        }
-        return;
-      }
+
       
       const taggedMessage = JSON.stringify({
         message: taggedString,

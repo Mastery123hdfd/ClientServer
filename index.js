@@ -116,9 +116,6 @@ history["main"] = [];
 
 
 
-function ensureIsArray(tag){
-  if (!Array.isArray(history[tag])) { history[tag] = []; }
-}
 
 function ensureRoom(tag, user, socket) {
     if (!Array.isArray(history[tag])) {
@@ -274,6 +271,8 @@ server.on("connection", socket => {
     if (!validateRoomName(user.prtag)) { user.prtag = "main"; }
   //Message Handler
     socket.on("message",async msg => {
+      console.log("WS: raw message:", msg.toString());
+
         try{
         if (!ensureRoom(user.prtag, user, socket)) return;
         let data = null;
@@ -450,85 +449,92 @@ server.on("connection", socket => {
             return;
           }
       if (data && data.type === "login") {
-  socket.send("Login Data received; Beginning Login Process");
+        try{
+          socket.send("Login Data received; Beginning Login Process");
 
-  const userin = data.v1;
-  const passin = data.v2;
+          const userin = data.v1;
+          const passin = data.v2;
 
-  if (user.loggedIn) {
-    socket.send("Error: User already logged in");
-    return;
-  }
+          if (user.loggedIn) {
+            socket.send("Error: User already logged in");
+            return;
+          }
 
-  let acc = null;
-  try {
-    const snapshot = await db.ref("logindata/accountdata").once("value");
-    snapshot.forEach(child => {
-      const val = child.val();
-      if (val.user === userin && val.pass === passin) {
-        acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
+          let acc = null;
+          try {
+            const snapshot = await db.ref("logindata/accountdata").once("value");
+            snapshot.forEach(child => {
+            const val = child.val();
+              if (val.user === userin && val.pass === passin) {
+                acc = new Account(val.user, val.pass, val.admin, val.mod, val.disp);
+              }
+            });
+          } catch (err) {
+            console.error("Error accessing login data:", err);
+            socket.send("Server error during login. Please try again later.");
+            return;
+          }
+
+          if (!acc) {
+            const created = ensureAccount(userin, passin);
+            if (!created) {
+              socket.send("Incorrect sign-in data");
+              return;
+            }
+
+            acc = new Account(userin, passin, false, false, userin);
+            user.username = acc.user;
+            user.pass = acc.pass;
+            user.moniker = acc.disp;
+            user.admin = false;
+            user.mod = false;
+            user.loggedIn = true;
+
+            socket.send("Account created. Logged in as normal user. Please note: Accounts cannot have username UNKNOWN. If this happens, please make a new account.");
+          } else {
+
+            user.username = acc.user;
+            user.pass = acc.pass;
+            user.moniker = acc.disp || acc.user;
+            user.admin = !!acc.admin;
+            user.mod = !!acc.mod;
+            user.loggedIn = true;
+
+            if (user.admin) socket.send("WELCOME ADMINISTRATOR.");
+            else if (user.mod) socket.send("Welcome Moderator.");
+          }
+
+
+          if (!user.sessionToken) {
+            const token = Math.random().toString(36).slice(2);
+            user.sessionToken = token;
+
+            await db.ref("sessions/" + token).set({
+              username: user.username,
+              pass: user.pass,
+              admin: user.admin,
+              mod: user.mod,
+              disp: user.moniker,
+              timestamp: Date.now()
+            });
+
+            socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
+            socket.send("Session token created");
+          }
+
+          return;
+        
+      } catch(err){
+        console.error("Error during login process:", err);
+        socket.send("Server error during login. Please try again later.");
+        return;
+      } 
       }
-    });
-  } catch (err) {
-    console.error("Error accessing login data:", err);
-    socket.send("Server error during login. Please try again later.");
-    return;
-  }
-
-  if (!acc) {
-    const created = ensureAccount(userin, passin);
-    if (!created) {
-      socket.send("Incorrect sign-in data");
-      return;
-    }
-
-    acc = new Account(userin, passin, false, false, userin);
-    user.username = acc.user;
-    user.pass = acc.pass;
-    user.moniker = acc.disp;
-    user.admin = false;
-    user.mod = false;
-    user.loggedIn = true;
-
-    socket.send("Account created. Logged in as normal user. Please note: Accounts cannot have username UNKNOWN. If this happens, please make a new account.");
-  } else {
-
-    user.username = acc.user;
-    user.pass = acc.pass;
-    user.moniker = acc.disp || acc.user;
-    user.admin = !!acc.admin;
-    user.mod = !!acc.mod;
-    user.loggedIn = true;
-
-    if (user.admin) socket.send("WELCOME ADMINISTRATOR.");
-    else if (user.mod) socket.send("Welcome Moderator.");
-  }
-
-
-  if (!user.sessionToken) {
-    const token = Math.random().toString(36).slice(2);
-    user.sessionToken = token;
-
-    await db.ref("sessions/" + token).set({
-      username: user.username,
-      pass: user.pass,
-      admin: user.admin,
-      mod: user.mod,
-      disp: user.moniker,
-      timestamp: Date.now()
-    });
-
-    socket.send(JSON.stringify({ type: "sessionToken", tokenid: token }));
-    socket.send("Session token created");
-  }
-
-  return;
-}
 
       if(user.loggedIn == false){
             socket.send("Login required; create an account or log in to chat.");
             return;
-        }
+      }
 
         if(msg == "/getplayers"){
           for (const [client, cUser] of clients) {

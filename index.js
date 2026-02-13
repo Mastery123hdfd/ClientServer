@@ -3,6 +3,7 @@ process.on("exit", code => {
 });
 
 
+
 process.stdout.write = (function(write) {
   return function(string, encoding, fd) {
     write.apply(process.stdout, arguments);
@@ -33,6 +34,13 @@ setInterval(() => {
   last = now;
 }, 100);
 
+let heartbeat= true;
+if(heartbeat){
+  setInterval(() => {
+    const now = new Date().toLocaleTimeString("en-US", { timeZone: "America/Chicago", hour12: true });
+    console.log("No crash detected:", now);
+  }, 5000);
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),

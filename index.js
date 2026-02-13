@@ -1,3 +1,8 @@
+process.on("exit", code => {
+  console.error("PROCESS EXITED WITH CODE:", code);
+});
+
+
 process.stdout.write = (function(write) {
   return function(string, encoding, fd) {
     write.apply(process.stdout, arguments);
@@ -666,8 +671,6 @@ server.on("connection", socket => {
 
         if (history[user.prtag].length > 200) {
             history[user.prtag].shift();
-            history[user.prtag].shift();
-            history[user.prtag].shift();
         }
 
         db.ref("chatlog/" + user.prtag).push({taggedMessage});
@@ -676,10 +679,13 @@ server.on("connection", socket => {
 
         for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === parsed.prtag) {
-                client.send(taggedMessage);
+                setImmediate(() => {
+                  try { client.send(taggedMessage); } catch (err) {
+//
+                  }   
+              });
             }
         }
-
     });
 
     

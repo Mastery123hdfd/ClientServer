@@ -411,7 +411,7 @@ server.on("connection", socket => {
               disp: acc.disp
             });
             user.sessionToken = token;
-            socket.send(JSON.stringify({type: "sessionToken", tokenid = token}));
+            socket.send(JSON.stringify({type: "sessionToken", tokenid: token}));
           
             socket.send("Session token sucessfully uploaded and distributed!!");
             return;

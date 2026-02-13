@@ -167,7 +167,7 @@ let aclist = [];
 
 function encodeLoginData(a, db){
   if (validateRoomName(a.user)){
-    db.ref("logindata/accountdata/" + a.user).set({
+    db.ref("logindata/accountdata/").push({
       user: a.user, 
       pass: a.pass, 
       admin: a.admin, 
@@ -422,7 +422,7 @@ server.on("connection", socket => {
                 }
             });
 
-            if(newaccount >0){
+            if(newaccount == 0){
               ensureAccount(userin, passin);
               acc = new Account(userin, passin, false, false, userin);
               user.username = userin;
@@ -433,7 +433,7 @@ server.on("connection", socket => {
               user.loggedIn = true;
               socket.send("New account created and logged in as " + userin);
               
-              db.ref("logindata/accountdata/" + userin).set({
+              db.ref("logindata/accountdata/").push({
                 user: userin, 
                 pass: passin,   
                 disp: userin,
@@ -538,7 +538,7 @@ server.on("connection", socket => {
           if(restrictedRooms.includes(user.prtag)){
             restrictedRooms = restrictedRooms.filter((restrictedRooms) => restrictedRooms !== user.prtag);
           }
-          await db.ref("room/" + user.prtag).set({
+          await db.ref("chatlog/" + user.prtag).set({
             restricted: false
           });
 

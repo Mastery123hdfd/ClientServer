@@ -2,40 +2,6 @@ process.on("exit", code => {
   console.error("PROCESS EXITED WITH CODE:", code);
 });
 
-// ===================== DEBUG ENDPOINT ===================== // Note: This is entirely ai-written.
-app.get("/debug", (req, res) => {
-    try {
-        const safeClients = [...clients].map(([socket, user]) => {
-            return {
-                moniker: user.moniker,
-                prtag: user.prtag,
-                admin: user.admin,
-                mod: user.mod,
-                id: user.id
-            };
-        });
-
-        const safeHistory = {};
-        for (const room in history) {
-            safeHistory[room] = history[room].slice(-20); // last 20 messages per room
-        }
-
-        res.json({
-            status: "ok",
-            rooms: Object.keys(history),
-            restrictedRooms,
-            clients: safeClients,
-            history: safeHistory
-        });
-
-    } catch (err) {
-        res.json({
-            status: "error",
-            message: err.message
-        });
-    }
-});
-
 
 process.stdout.write = (function(write) {
   return function(string, encoding, fd) {

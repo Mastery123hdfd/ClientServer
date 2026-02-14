@@ -128,6 +128,9 @@ function ensureRoom(tag, user, socket) {
       socket.send(JSON.stringify({ type: "clearHistoryChatless" }));
         if(user.mod || user.admin){
             history[tag] = [];
+            
+            socket.send("Room created: " + tag);
+
             return true;
         }else{
             socket.send("Regular Users cannot create their own rooms. Open rooms created by admin: ler, open1, open2. Try them out or use the room code given to you by a mod.");
@@ -329,7 +332,8 @@ server.on("connection", socket => {
             user.moniker = newMoniker;
             user.newName = false;
             socket.send("Name changed. New name: " + user.moniker);
-            sessionUpdate(user, db, user.sessionToken);
+            let afromUser = convertUsertoAccount(user);
+            updatesession(afromUser, db, user.sessionToken);
             return;
         }
 
@@ -547,8 +551,10 @@ server.on("connection", socket => {
           
           await db.ref("chatlog/" + user.prtag).set({
             restricted: true
-          });     
+          });
+          socket.send("Room restricted. Only staff may message here from now on.");     
           return;
+          
         }
 
         //======================= UNRESTRICT ROOM =====================
@@ -560,7 +566,7 @@ server.on("connection", socket => {
           await db.ref("chatlog/" + user.prtag).set({
             restricted: false
           });
-
+          socket.send("Room unrestricted. Regular users may message here again.");
           return;
         }
 
@@ -738,6 +744,10 @@ server.on("connection", socket => {
         hour12: true
       });
 
+      if(data && data.type === "login"){
+        return;
+      } //super janky catch that prevents the login from being sent because its kind of broken xD
+
       let taggedString = `(${timestamp}) | ${user.moniker}: ${msg}`;
       
 
@@ -748,10 +758,10 @@ server.on("connection", socket => {
       }
       //socket.send("String generated");
       try{
-      if(restrictedRooms.includes(user.prtag) && !(user.mod || user.admin)){
-        socket.send("Room is restricted. Only staff may message here.");
-        return;
-      }
+        if(restrictedRooms.includes(user.prtag) && !(user.mod || user.admin)){
+          socket.send("Room is restricted. Only staff may message here.");
+          return;
+        }
       } catch(err){
         console.log("ERROR WITH RESTRICTED ROOMS");
       }

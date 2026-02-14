@@ -388,8 +388,12 @@ server.on("connection", socket => {
           }
           
           ensureRoom(newPrTag, user, socket);
-
+          
           user.prtag = newPrTag;
+
+          for(const line of history[newPrTag]){
+            socket.send(line);
+          }
           return;
         }
 

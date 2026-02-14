@@ -64,9 +64,10 @@ const clients = new Map();
 // Proper history buffer
 const history = {};
 
-function validateRoomName(name) {
+function ValidateName(name) {
     // Only allow alphanumeric, underscores, and hyphens
     // Prevents path traversal attempts like "../" or "..\\"
+    if(name == "UNKNOWN") return false;
     return /^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 50;
 }
 
@@ -168,7 +169,7 @@ let aclist = [];
 
 
 function encodeLoginData(a, db){
-  if (validateRoomName(a.user)){
+  if (ValidateName(a.user)){
     db.ref("logindata/accountdata/").push({
       user: a.user, 
       pass: a.pass, 
@@ -179,7 +180,7 @@ function encodeLoginData(a, db){
   }
 }
 function updateLoginPermData(a, db){
-  if(validateRoomName(a.user)){
+  if(ValidateName(a.user)){
     try{
       db.ref("logindata/accountdata").once("value", snapshot=>{
         (child => {
@@ -204,7 +205,7 @@ async function updateSession(a, db, token){
     return;
   }
 
- if(validateRoomName(a.user)){
+ if(ValidateName(a.user)){
   try{
   const snapshot = await db.ref("sessions/" + token).once("value");
   } catch(err){
@@ -253,7 +254,7 @@ db.ref("logindata/accountdata").once("value", snapshot => {
 }
 //^Loads login data
 function ensureAccount(user, pass){
-  if (!validateRoomName(user)) return false;
+  if (!ValidateName(user)) return false;
   if(loginfo[user]){
     return false;
   } else{
@@ -283,7 +284,7 @@ server.on("connection", socket => {
     });
     const user = clients.get(socket);
     ensureRoom(user.prtag, user, socket);
-    if (!validateRoomName(user.prtag)) { user.prtag = "main"; }
+    if (!ValidateName(user.prtag)) { user.prtag = "main"; }
 
 
   //Message Handler==================================================
@@ -322,7 +323,7 @@ server.on("connection", socket => {
         if (user.newName) {
             const newMoniker = msg?.trim();
 
-            if (!newMoniker || !validateRoomName(newMoniker)) {
+            if (!newMoniker || !ValidateName(newMoniker)) {
                 socket.send("Invalid Moniker.");
                 user.newName = false;
                 return;
@@ -350,7 +351,9 @@ server.on("connection", socket => {
           socket.send("================= USERS IN ROOM =================");
           for(const [client, cUser] of clients){
             if(client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag){
-              socket.send("User: " + cUser.moniker);
+              if(cUser.moniker !== "UNKNOWN"){
+                socket.send("User: " + cUser.moniker);
+              }
             }
           }
         }
@@ -378,7 +381,7 @@ server.on("connection", socket => {
         //======================== CHANGE PRIVATE ROOM ======================
         if(data && data.type === "changePrTag"){
           const newPrTag = data.v1;
-          if (!validateRoomName(newPrTag)) {
+          if (!ValidateName(newPrTag)) {
             socket.send("Invalid private room name.");
             return;
           }

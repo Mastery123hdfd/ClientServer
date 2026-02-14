@@ -356,6 +356,7 @@ server.on("connection", socket => {
               }
             }
           }
+          return;
         }
 
         // ===================== SESSION RESTORE =====================

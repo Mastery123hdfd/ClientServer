@@ -333,7 +333,7 @@ server.on("connection", socket => {
             user.newName = false;
             socket.send("Name changed. New name: " + user.moniker);
             let afromUser = convertUsertoAccount(user);
-            updatesession(afromUser, db, user.sessionToken);
+            updateSession(afromUser, db, user.sessionToken);
             return;
         }
 

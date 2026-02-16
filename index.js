@@ -315,16 +315,24 @@ function ensureAccount(user, pass){
 
 //======================================================================================================
 //======================================================================================================
-//Banning Will be added soon. ====================================== BANNING WILL BE ADDED SOON=========
+//BANNING CODE
+bannedIPs = {};
 //======================================================================================================
 //======================================================================================================
 
 
 server.on("connection", socket => {
     console.log("Client connected");
-    let token = null;
     let firstmessage = true;
     let command = false;
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
+    if(bannedIPs.has(ip)){
+      socket.send("You are banned. If you believe this is a mistake, please contact an admin.");
+      socket.close();
+      return;
+    }
+
+    
  // Decode login info from Account Info
     clients.set(socket, {
       moniker: "UNKNOWN",
@@ -394,7 +402,7 @@ server.on("connection", socket => {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
                 if(meta.isImg){
                   client.send(JSON.stringify({
-                    metatype: "imgmeta",
+                    type: "imgmeta",
                     name: meta.name,
                     size: meta.size,
                     type: meta.type
@@ -402,7 +410,7 @@ server.on("connection", socket => {
                   client.send(await file.arrayBuffer());
                 } else {
                   client.send(JSON.stringify({
-                    metatype: "regmeta",
+                    type: "regmeta",
                     name: meta.name,
                     size: meta.size,
                     type: meta.type
@@ -656,6 +664,48 @@ server.on("connection", socket => {
           console.log("Message removed from memory.");
           socket.send("Message Removed.");
           return;
+        }
+        // ===================== BAN USER ==========================
+        if (msg == "/banuser" && user.admin) {
+          socket.send("Please input the username of the user you wish to ban");
+          user.awaitingBanTarget = true;
+          return;
+        }
+
+        // ===================== HANDLE BAN TARGET ==========================
+
+        if (user.awaitingBanTarget) {
+          clients.forEach((cUser, client) => {
+            if (cUser.moniker === msg) {
+              if (client._socket && client._socket.remoteAddress) {
+                const ip = client._socket.remoteAddress;
+                if (!bannedIPs.has(ip)) {
+                  bannedIPs.set(cUser.moniker, ip);
+                }
+              }
+              client.send("You have been banned by " + user.moniker);
+              client.close();
+              socket.send("User " + user.awaitingBanTarget + " has been banned.");
+              user.awaitingBanTarget = false;
+            }
+          });
+        } // I didn't do anything?
+
+        // ====================== UNBAN USERS =======================
+        
+        if (msg == "/unban" && user.admin) {
+          socket.send("Please input the username of the user you wish to unban");
+          user.awaitingUnbanTarget = true;
+          return;
+        }
+        
+        // ===================== HANDLE UNBAN TARGET ==========================
+
+        if(user.awaitingUnbanTarget){
+          if(bannedIPs.has(msg)){
+            bannedIPs.delete(msg);
+            socket.send("User " + msg + " has been unbanned.");
+          }
         }
 
         //====================== RESTRICT ROOM =====================

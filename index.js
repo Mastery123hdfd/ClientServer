@@ -2,6 +2,15 @@ process.on("exit", code => {
   console.error("PROCESS EXITED WITH CODE:", code);
 });
 
+const { Storage } = require('megajs');
+async function connectMegaDB(){
+  const storage = await new storage({
+    email:process.env.MEGA_EMAIL,
+    password:process.env.MEGA_PASSWORD
+  }).ready;
+  return storage;
+}
+const filedb = await connectMegaDB();
 
 process.stdout.write = (function(write) {
   return function(string, encoding, fd) {
@@ -141,8 +150,29 @@ function ensureRoom(tag, user, socket) {
         }
         
     }
+    ensureFolder("clieniep/" + tag);
     return true;
 }
+
+async function createFolder(fold){
+  return new Promise((resolve, reject) => {
+    storage.mkdir(fold, (err, folder) => {
+      if (err) reject(err);
+      else resolve(folder);
+    });
+  });
+}
+
+async function ensureFolder(fold) {
+  // Check if folder already exists
+  for (const file of Object.values(filedb.files)) {
+    if (file.name === fold && file.directory) {
+      return file;
+    }
+  }
+  return await createFolder();
+}
+
 
 class Account{
   constructor(user, pass, admin, mod, disp){
@@ -265,6 +295,13 @@ function ensureAccount(user, pass){
   }
 }
 
+//======================================================================================================
+//======================================================================================================
+//Banning Will be added soon. ====================================== BANNING WILL BE ADDED SOON=========
+//======================================================================================================
+//======================================================================================================
+
+
 server.on("connection", socket => {
     console.log("Client connected");
     let token = null;
@@ -282,15 +319,19 @@ server.on("connection", socket => {
       loggedIn: false,
       sessionToken: null
     });
+    let meta = null;
     const user = clients.get(socket);
     ensureRoom(user.prtag, user, socket);
     if (!ValidateName(user.prtag)) { user.prtag = "main"; }
+  
+  //===================================================================================================================
+  //===================================================================================================================
+  //==================================================Message Handler==================================================
+  //===================================================================================================================
+  //===================================================================================================================
 
 
-  //Message Handler==================================================
-
-
-    socket.on("message", async msg => {
+    socket.on("message", async (msg, isBinary = false) => {
     console.log("WS: raw message:", msg.toString());
         if (!ensureRoom(user.prtag, user, socket)) return;
 
@@ -316,6 +357,43 @@ server.on("connection", socket => {
             }
             socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). ");
             firstmessage = false;
+        }
+
+        //==================== HANDLE ACTUAL DATA ==========================
+        if(isBinary){
+          
+          const file = ensureFolder(user.prtag);
+          const val = new Promise((resolve, reject) => {
+            const filee = filedb.upload({
+              name: meta.name || "empty name", target: folder
+            }, buffer);
+            filee.on("complete", () => resolve(file));
+            filee.on("error", reject);
+          });
+          // Distribute to users
+          for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+                if(meta.isImg){
+                  client.send(JSON.stringify({
+                    metatype: "imgmeta",
+                    name: meta.name,
+                    size: meta.size,
+                    type: meta.type
+                  }));
+                  client.send(await file.arrayBuffer());
+                } else {
+                  client.semd(JSON.stringify({
+                    metatype: "regmeta",
+                    name: meta.name,
+                    size: meta.size,
+                    type: meta.type
+                  }));
+                  client.send(await file.arrayBuffer());
+                }
+            }
+          }
+          meta = null;
+          return;
         }
 
         // ===================== NAME CHANGE HANDLER =====================
@@ -394,6 +472,18 @@ server.on("connection", socket => {
           for(const line of history[newPrTag]){
             socket.send(line);
           }
+          return;
+        }
+
+        //========================== Image Meta Handler ===============================
+        if(data && data.type === "imgmeta"){
+          meta = {name: data.msg, size: data.v1, type: data.v2, isImg: true, prtag: data.prtag};
+          return;
+        }
+      
+        //=========================== Reg Meta Handler ================================
+        if(data && data.type === "regmeta"){
+          meta = {name: data.msg, size: data.v1, type: data.v2, isImg: false, prtag: data.prtag};
           return;
         }
 
@@ -785,7 +875,7 @@ server.on("connection", socket => {
       //socket.send("Sending to history...");
       history[user.prtag].push(taggedMessage);
 
-      if (history[user.prtag].length > 200) {
+      if (history[user.prtag].length > 350) {
         history[user.prtag].shift();
       }
       //socket.send("History trimmed");

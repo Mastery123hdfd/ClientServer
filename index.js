@@ -154,6 +154,24 @@ function ensureRoom(tag, user, socket) {
     return true;
 }
 
+const sharp = require('sharp');
+function compressImage(buffer, mimeType) {
+  const image = sharp(buffer);
+
+  if (mimeType === "image/jpeg") {
+    return image.jpeg({ quality: 70 }).toBuffer();
+  } else if (mimeType === "image/png") {
+    return image.png({ compressionLevel: 9 }).toBuffer();
+  } else if (mimeType === "image/webp") {
+    return image.webp({ quality: 70 }).toBuffer();
+  } else {
+    // fallback: convert unknown formats to webp
+    return image.webp({ quality: 70 }).toBuffer();
+  }
+}
+
+
+
 async function createFolder(fold){
   return new Promise((resolve, reject) => {
     storage.mkdir(fold, (err, folder) => {
@@ -362,7 +380,8 @@ server.on("connection", socket => {
         //==================== HANDLE ACTUAL DATA ==========================
         if(isBinary){
           
-          const file = ensureFolder(user.prtag);
+          let file = ensureFolder(user.prtag);
+          file = compressImage(Buffer.from(msg), meta.type);
           const val = new Promise((resolve, reject) => {
             const filee = filedb.upload({
               name: meta.name || "empty name", target: folder
@@ -382,7 +401,7 @@ server.on("connection", socket => {
                   }));
                   client.send(await file.arrayBuffer());
                 } else {
-                  client.semd(JSON.stringify({
+                  client.send(JSON.stringify({
                     metatype: "regmeta",
                     name: meta.name,
                     size: meta.size,

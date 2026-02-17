@@ -10,7 +10,7 @@ async function connectMegaDB(){
   }).ready;
   return storage;
 }
-const filedb = await connectMegaDB();
+
 
 process.stdout.write = (function(write) {
   return function(string, encoding, fd) {
@@ -172,34 +172,42 @@ history["main"] = [];
 
 
 async function ensureRoom(tag, user, socket) {
-    if (!Array.isArray(history[tag])) {
-      socket.send(JSON.stringify({ type: "clearHistoryChatless" }));
-        if(user.mod || user.admin){
-            history[tag] = [];
-            
-            socket.send("Room created: " + tag);
-
-            return true;
-        }else{
-            socket.send("Regular Users cannot create their own rooms. Use the room code given to you by a mod.");
-            for (const line of history["main"]) {
-                if(isJson(line)){
-                  const data = JSON.parse(line.toString());
-                  if(data.type == "regmeta" || data.type == "imgmeta"){
-                    socket.send(JSON.stringify(data));
-                    let file = await downloadFromMega(data.id);
-                    socket.send(file, { binary: true });
-                  }
-                }
-                socket.send(line);
+  if (!Array.isArray(history[tag])) {
+    socket.send(JSON.stringify({ type: "clearHistoryChatless" }));
+    if (user.mod || user.admin) {
+      history[tag] = [];
+      socket.send("Room created: " + tag);
+      return true;
+    } else {
+      socket.send("Regular Users cannot create their own rooms. Use the room code given to you by a mod.");
+      for (const line of history["main"]) {
+        try {
+          if (isJson(line)) {
+            const data = JSON.parse(line.toString());
+            if (data.type === "regmeta" || data.type === "imgmeta") {
+              socket.send(JSON.stringify(data));
+              const db = await connectMegaDB();
+              const file = await downloadFromMega(data.id, db);
+              socket.send(file, { binary: true });
             }
-            return false;
+          }
+        } catch (e) {
+          console.error("Error sending MEGA file:", e);
         }
-        
+        socket.send(line);
+      }
+      return false;
     }
+  }
+
+  try {
     await ensureFolder(tag);
-    return true;
+  } catch (e) {
+    console.error("Error ensuring folder:", e);
+  }
+  return true;
 }
+
 
 const sharp = require('sharp');
 function compressImage(buffer, mimeType) {
@@ -220,6 +228,7 @@ function compressImage(buffer, mimeType) {
 
 
 async function createFolder(fold){
+  const filedb = await connectMegaDB();
   return new Promise((resolve, reject) => {
     filedb.mkdir(fold, (err, folder) => {
       if (err) reject(err);
@@ -229,6 +238,7 @@ async function createFolder(fold){
 }
 
 async function ensureFolder(fold) {
+  const filedb = await connectMegaDB();
   // Check if folder already exists
   for (const file of Object.values(filedb.files)) {
     if (file.name === fold && file.directory) {
@@ -239,6 +249,7 @@ async function ensureFolder(fold) {
 }
 
 async function downloadFromMega(nodeId) {
+  const filedb = await connectMegaDB();
   const file = filedb.files[nodeId];
   if (!file) throw new Error("File not found");
 
@@ -313,27 +324,28 @@ async function updateSession(a, db, token){
     return;
   }
 
- if(ValidateName(a.user)){
-  try{
-  const snapshot = await db.ref("sessions/" + token).once("value");
-  } catch(err){
+  if (!ValidateName(a.user)) return;
+
+  let snapshot;
+  try {
+    snapshot = await db.ref("sessions/" + token).once("value");
+  } catch (err) {
     console.error("Error accessing session data:", err);
     return;
   }
-  if(snapshot.exists()){
-   const val = snapshot.val();
-   const ref = db.ref("sessions/" + token);
-   await ref.update({
+
+  if (!snapshot.exists()) {
+    console.log("Error! Session not found!");
+    return;
+  }
+
+  await db.ref("sessions/" + token).update({
     mod: a.mod,
     admin: a.admin,
     disp: a.disp
   });
- } else{
-   console.log("Erorr! Session not found!");
-   return;
-  }
- }
 }
+
 
 function convertUsertoAccount(user){
   return new Account(user.username, user.pass, user.admin, user.mod, user.moniker);
@@ -455,6 +467,7 @@ server.on("connection", async (socket,req) => {
             console.log("No metadata sent!");
             return;
           }
+          const filedb = await connectMegaDB();
           let file = await ensureFolder(user.prtag);
           let filebuff = await compressImage(msg, meta.type);
           const val = await new Promise((resolve, reject) => {

@@ -15,6 +15,7 @@ const filedb = await connectMegaDB();
 process.stdout.write = (function(write) {
   return function(string, encoding, fd) {
     write.apply(process.stdout, arguments);
+    const fs = require("fs");
     try { fs.fsyncSync(1); } catch(e) {}
   };
 })(process.stdout.write);
@@ -133,6 +134,7 @@ function isJson(msg){
           console.log("Invalid JSON from client:", raw);
         return false;
       }
+      return true;
     }
   return false;
 }
@@ -182,7 +184,7 @@ async function ensureRoom(tag, user, socket) {
                 if(isJson(line)){
                   const data = JSON.parse(line.toString());
                   if(data.type == "regmeta" || data.type == "imgmeta"){
-                    socket.send(data);
+                    socket.send(JSON.stringify(data));
                     let file = await downloadFromMega(data.id);
                     socket.send(file, { binary: true });
                   }
@@ -372,13 +374,13 @@ function ensureAccount(user, pass){
 //======================================================================================================
 //======================================================================================================
 //BANNING CODE
-bannedIPs = new Map();
+const bannedIPs = new Map();
 //username, ip
 //======================================================================================================
 //======================================================================================================
 
 
-server.on("connection", (socket,req) => {
+server.on("connection", async (socket,req) => {
     console.log("Client connected");
     let firstmessage = true;
     let command = false;

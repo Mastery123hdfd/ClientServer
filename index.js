@@ -405,7 +405,7 @@ server.on("connection", (socket,req) => {
     });
     let meta = null;
     const user = clients.get(socket);
-    ensureRoom(user.prtag, user, socket);
+    await ensureRoom(user.prtag, user, socket);
     if (!ValidateName(user.prtag)) { user.prtag = "main"; }
   
   //===================================================================================================================
@@ -560,7 +560,7 @@ server.on("connection", (socket,req) => {
             return;
           }
           
-          ensureRoom(newPrTag, user, socket);
+          await ensureRoom(newPrTag, user, socket);
           
           user.prtag = newPrTag;
 

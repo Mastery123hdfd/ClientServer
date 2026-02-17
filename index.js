@@ -94,7 +94,24 @@ db.ref("chatlog").once("value", snapshot => {
               if (entry && entry.taggedMessage) {
                  history[room].push(entry.taggedMessage);
                  
-                } 
+              }
+            else{
+              try{
+                let data = null;
+                let raw = msg.toString();
+
+                if (raw.startsWith("{")) {
+                  try {
+                    data = JSON.parse(raw);
+                  } catch (e) {
+                    console.log("Invalid JSON from Firebase", raw);
+                    break;
+                  }
+                  history[room].push(data);
+                  
+                }
+              }
+            }
             }); 
          const restricted = room.restriction;
          if(restricted && restricted == true){
@@ -106,8 +123,27 @@ db.ref("chatlog").once("value", snapshot => {
 } catch(err){
   console.error("Error loading history from Firebase:", err);
 }
+function isJson(msg){
+  let data = null;
+  let raw = msg.toString();
 
+  if (raw.startsWith("{")) {
+      try {
+          data = JSON.parse(raw);
+      } catch (e) {
+          console.log("Invalid JSON from client:", raw);
+        return false;
+      }
+    }
+  return false;
+}
 
+//Loading from Mega
+try{
+  
+} catch(err{
+  console.error("Error Loading From MEGA");
+}
 
 
 const cmdliststring = ["====Command List====", "/help: Displays this menu", "/cmd: Activates command mode", "/getprlist: Gets a list of all private rooms; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/strikemsg: Removes a message from the chat history and clears it from everyone's logs; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/clearhist: Clears the entire history of the current chat room; ADMIN ONLY; COMMAND MODE REQUIRED", "/getplayers: Gets a list of all users currently online; BROKEN", "/login: Starts the login process", "/changename: Changes your name", "/gethistlength: Gets the length of the current chat history; ADMIN ONLY; COMMAND MODE REQUIRED", "/loginhelp: Gives you instructions on how to login"]; 
@@ -142,8 +178,16 @@ function ensureRoom(tag, user, socket) {
 
             return true;
         }else{
-            socket.send("Regular Users cannot create their own rooms. Open rooms created by admin: ler, open1, open2. Try them out or use the room code given to you by a mod.");
+            socket.send("Regular Users cannot create their own rooms. Use the room code given to you by a mod.");
             for (const line of history["main"]) {
+                if(isJson(line){
+                  const data = JSON.parse(line.toString());
+                  if(data.type == "regmeta" || data.type == "imgmeta"){
+                    socket.send(data);
+                    let file = await downloadFromMega(data.id);
+                    socket.send(await file.arrayBuffer());
+                  }
+                }
                 socket.send(line);
             }
             return false;
@@ -397,27 +441,33 @@ server.on("connection", socket => {
             filee.on("complete", () => resolve(file));
             filee.on("error", reject);
           });
+          const id = val.nodeId;
           // Distribute to users
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
                 if(meta.isImg){
-                  client.send(JSON.stringify({
+                  let dat = (JSON.stringify({
                     type: "imgmeta",
                     name: meta.name,
                     size: meta.size,
-                    type: meta.type
+                    type: meta.type,
+                    id: id
                   }));
                   client.send(await file.arrayBuffer());
                 } else {
-                  client.send(JSON.stringify({
+                  let dat = (JSON.stringify({
                     type: "regmeta",
                     name: meta.name,
                     size: meta.size,
-                    type: meta.type
+                    type: meta.type,
+                    id: id
                   }));
                   client.send(await file.arrayBuffer());
                 }
+              history.push({file: dat});
+              db.ref("chatlog/" + user.prtag).push(dat);
             }
+            
           }
           meta = null;
           return;

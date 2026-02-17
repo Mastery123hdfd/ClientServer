@@ -106,20 +106,22 @@ db.ref("chatlog").once("value", snapshot => {
                       data = JSON.parse(raw);
                     } catch (e) {
                       console.log("Invalid JSON from Firebase", raw);
-                      break;
+                      return;
                     }
                     history[room].push(data);   
                   }
+                } catch(err){
+                  console.error("Error processing Firebase entry:", err);
+                }
               }
-            }
             }); 
-         const restricted = room.restriction;
+         const restricted = roomSnap.val().restriction;
          if(restricted && restricted == true){
-           restrictedRooms.push(room);
+           restrictedRooms.push(roomSnap.key);
          }
         }); 
     console.log("History loaded from Firebase"); 
-});
+  });
 } catch(err){
   console.error("Error loading history from Firebase:", err);
 }
@@ -142,7 +144,7 @@ function isJson(msg){
 //Loading from Mega
 try{
   
-} catch(err{
+} catch(err){
   console.error("Error Loading From MEGA");
 }
 

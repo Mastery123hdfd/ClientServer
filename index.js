@@ -4,7 +4,7 @@ process.on("exit", code => {
 
 const { Storage } = require('megajs');
 async function connectMegaDB(){
-  const storage = await new storage({
+  const storage = await new Storage({
     email:process.env.MEGA_EMAIL,
     password:process.env.MEGA_PASSWORD
   }).ready;
@@ -95,21 +95,20 @@ db.ref("chatlog").once("value", snapshot => {
                  history[room].push(entry.taggedMessage);
                  
               }
-            else{
-              try{
-                let data = null;
-                let raw = msg.toString();
+              else{
+                try{
+                  let data = null;
+                  let raw = entry.toString();
 
-                if (raw.startsWith("{")) {
-                  try {
-                    data = JSON.parse(raw);
-                  } catch (e) {
-                    console.log("Invalid JSON from Firebase", raw);
-                    break;
+                  if (raw.startsWith("{")) {
+                    try {
+                      data = JSON.parse(raw);
+                    } catch (e) {
+                      console.log("Invalid JSON from Firebase", raw);
+                      break;
+                    }
+                    history[room].push(data);   
                   }
-                  history[room].push(data);
-                  
-                }
               }
             }
             }); 
@@ -180,7 +179,7 @@ function ensureRoom(tag, user, socket) {
         }else{
             socket.send("Regular Users cannot create their own rooms. Use the room code given to you by a mod.");
             for (const line of history["main"]) {
-                if(isJson(line){
+                if(isJson(line)){
                   const data = JSON.parse(line.toString());
                   if(data.type == "regmeta" || data.type == "imgmeta"){
                     socket.send(data);
@@ -194,7 +193,7 @@ function ensureRoom(tag, user, socket) {
         }
         
     }
-    ensureFolder("clieniep/" + tag);
+    ensureFolder(tag);
     return true;
 }
 
@@ -218,7 +217,7 @@ function compressImage(buffer, mimeType) {
 
 async function createFolder(fold){
   return new Promise((resolve, reject) => {
-    storage.mkdir(fold, (err, folder) => {
+    Storage.mkdir(fold, (err, folder) => {
       if (err) reject(err);
       else resolve(folder);
     });
@@ -232,7 +231,7 @@ async function ensureFolder(fold) {
       return file;
     }
   }
-  return await createFolder();
+  return await createFolder(fold);
 }
 
 
@@ -360,17 +359,19 @@ function ensureAccount(user, pass){
 //======================================================================================================
 //======================================================================================================
 //BANNING CODE
-bannedIPs = {};
+bannedIPs = new Map();
+//username, ip
 //======================================================================================================
 //======================================================================================================
 
 
-server.on("connection", socket => {
+server.on("connection", (socket,req) => {
     console.log("Client connected");
     let firstmessage = true;
     let command = false;
     const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
-    if(bannedIPs.has(ip)){
+    let ipBanArray = Array.from(bannedUsers.values())
+    if(ipBanArray.includes(ip)){
       socket.send("You are banned. If you believe this is a mistake, please contact an admin.");
       socket.close();
       return;
@@ -401,13 +402,16 @@ server.on("connection", socket => {
   //===================================================================================================================
 
 
-    socket.on("message", async (msg, isBinary = false) => {
+    socket.on("message", async (msg, isBinary) => {
     console.log("WS: raw message:", msg.toString());
-        if (!ensureRoom(user.prtag, user, socket)) return;
+        if (! await ensureRoom(user.prtag, user, socket)) return;
 
         let data = null;
-        let raw = msg.toString();
-
+        if(!isBinary){
+          let raw = msg.toString();
+        }
+        
+      if(!isBinary){
         if (raw.startsWith("{")) {
             try {
                 data = JSON.parse(raw);
@@ -415,8 +419,10 @@ server.on("connection", socket => {
                 console.log("Invalid JSON from client:", raw);
             }
         }
-
+      }
+      if(!isBinary){
         msg = data?.msg || raw;
+      }
         if (msg === "") return;
 
         user.active = true;
@@ -433,11 +439,11 @@ server.on("connection", socket => {
         if(isBinary){
           
           let file = ensureFolder(user.prtag);
-          file = compressImage(Buffer.from(msg), meta.type);
+          file = await compressImage(msg, meta.type);
           const val = new Promise((resolve, reject) => {
             const filee = filedb.upload({
-              name: meta.name || "empty name", target: folder
-            }, buffer);
+              name: meta.name || "empty name", target: file
+            });
             filee.on("complete", () => resolve(file));
             filee.on("error", reject);
           });
@@ -464,7 +470,7 @@ server.on("connection", socket => {
                   }));
                   client.send(await file.arrayBuffer());
                 }
-              history.push({file: dat});
+              history[user.prtag].push({file: dat});
               db.ref("chatlog/" + user.prtag).push(dat);
             }
             
@@ -729,7 +735,7 @@ server.on("connection", socket => {
             if (cUser.moniker === msg) {
               if (client._socket && client._socket.remoteAddress) {
                 const ip = client._socket.remoteAddress;
-                if (!bannedIPs.has(ip)) {
+                if (!bannedIPs.has(msg)) {
                   bannedIPs.set(cUser.moniker, ip);
                 }
               }

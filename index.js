@@ -167,7 +167,7 @@ history["main"] = [];
 
 
 
-function ensureRoom(tag, user, socket) {
+async function ensureRoom(tag, user, socket) {
     if (!Array.isArray(history[tag])) {
       socket.send(JSON.stringify({ type: "clearHistoryChatless" }));
         if(user.mod || user.admin){
@@ -184,7 +184,7 @@ function ensureRoom(tag, user, socket) {
                   if(data.type == "regmeta" || data.type == "imgmeta"){
                     socket.send(data);
                     let file = await downloadFromMega(data.id);
-                    socket.send(await file.arrayBuffer());
+                    socket.send(file, { binary: true });
                   }
                 }
                 socket.send(line);
@@ -193,7 +193,7 @@ function ensureRoom(tag, user, socket) {
         }
         
     }
-    ensureFolder(tag);
+    await ensureFolder(tag);
     return true;
 }
 
@@ -217,7 +217,7 @@ function compressImage(buffer, mimeType) {
 
 async function createFolder(fold){
   return new Promise((resolve, reject) => {
-    Storage.mkdir(fold, (err, folder) => {
+    filedb.mkdir(fold, (err, folder) => {
       if (err) reject(err);
       else resolve(folder);
     });
@@ -232,6 +232,19 @@ async function ensureFolder(fold) {
     }
   }
   return await createFolder(fold);
+}
+
+async function downloadFromMega(nodeId) {
+  const file = filedb.files[nodeId];
+  if (!file) throw new Error("File not found");
+
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    file.download()
+      .on("data", c => chunks.push(c))
+      .on("end", () => resolve(Buffer.concat(chunks)))
+      .on("error", reject);
+  });
 }
 
 
@@ -370,7 +383,7 @@ server.on("connection", (socket,req) => {
     let firstmessage = true;
     let command = false;
     const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
-    let ipBanArray = Array.from(bannedUsers.values())
+    let ipBanArray = Array.from(bannedIPs.values())
     if(ipBanArray.includes(ip)){
       socket.send("You are banned. If you believe this is a mistake, please contact an admin.");
       socket.close();
@@ -407,22 +420,19 @@ server.on("connection", (socket,req) => {
         if (! await ensureRoom(user.prtag, user, socket)) return;
 
         let data = null;
+        let raw = null;
         if(!isBinary){
-          let raw = msg.toString();
-        }
-        
-      if(!isBinary){
-        if (raw.startsWith("{")) {
+          raw = msg.toString();
+          if (raw.startsWith("{")) {
             try {
                 data = JSON.parse(raw);
             } catch (e) {
                 console.log("Invalid JSON from client:", raw);
             }
+          }
+          msg = data?.msg || raw;
         }
-      }
-      if(!isBinary){
-        msg = data?.msg || raw;
-      }
+      
         if (msg === "") return;
 
         user.active = true;
@@ -437,15 +447,16 @@ server.on("connection", (socket,req) => {
 
         //==================== HANDLE ACTUAL DATA ==========================
         if(isBinary){
-          
-          let file = ensureFolder(user.prtag);
-          file = await compressImage(msg, meta.type);
-          const val = new Promise((resolve, reject) => {
-            const filee = filedb.upload({
-              name: meta.name || "empty name", target: file
-            });
-            filee.on("complete", () => resolve(file));
-            filee.on("error", reject);
+          if(!meta){
+            console.log("No metadata sent!");
+            return;
+          }
+          let file = await ensureFolder(user.prtag);
+          let filebuff = await compressImage(msg, meta.type);
+          const val = await new Promise((resolve, reject) => {
+            const up = filedb.upload({ name: meta.name, target: file }, filebuff);
+            up.on("complete", resolve);
+            up.on("error", reject);
           });
           const id = val.nodeId;
           // Distribute to users
@@ -459,8 +470,9 @@ server.on("connection", (socket,req) => {
                     type: meta.type,
                     id: id
                   }));
-                  client.send(await file.arrayBuffer());
-                } else {
+                  client.send(dat);
+                  client.send(filebuff, { binary: true });
+                } else { // generate otherwise md
                   let dat = (JSON.stringify({
                     type: "regmeta",
                     name: meta.name,
@@ -468,12 +480,12 @@ server.on("connection", (socket,req) => {
                     type: meta.type,
                     id: id
                   }));
-                  client.send(await file.arrayBuffer());
+                  client.send(dat);
+                  client.send(filebuff, { binary: true });
                 }
-              history[user.prtag].push({file: dat});
+              history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);
             }
-            
           }
           meta = null;
           return;

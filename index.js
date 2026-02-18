@@ -585,12 +585,14 @@ server.on("connection", async (socket,req) => {
         //========================== Image Meta Handler ===============================
         if(data && data.type === "imgmeta"){
           meta = {name: data.msg, size: data.v1, type: data.v2, isImg: true, prtag: data.prtag};
+          console.log("Image Meta created:" meta.name);
           return;
         }
       
         //=========================== Reg Meta Handler ================================
         if(data && data.type === "regmeta"){
           meta = {name: data.msg, size: data.v1, type: data.v2, isImg: false, prtag: data.prtag};
+          console.log("Non-image Meta Craeted:" meta.name);
           return;
         }
 

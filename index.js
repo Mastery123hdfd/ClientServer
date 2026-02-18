@@ -11,15 +11,6 @@ async function connectMegaDB(){
   return storage;
 }
 
-
-process.stdout.write = (function(write) {
-  return function(string, encoding, fd) {
-    write.apply(process.stdout, arguments);
-    const fs = require("fs");
-    try { fs.fsyncSync(1); } catch(e) {}
-  };
-})(process.stdout.write);
-
 admin = require("firebase-admin");
 
 process.on("uncaughtException", err => {
@@ -467,6 +458,7 @@ server.on("connection", async (socket,req) => {
             console.log("No metadata sent!");
             return;
           }
+          console.log("Data received!!!");
           const filedb = await connectMegaDB();
           let file = await ensureFolder(user.prtag);
           let filebuff = await compressImage(msg, meta.type);

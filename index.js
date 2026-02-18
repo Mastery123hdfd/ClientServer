@@ -481,6 +481,7 @@ server.on("connection", async (socket,req) => {
                     mimetype: meta.type,
                     id: id
                   }));
+                  
                   client.send(dat);
                   client.send(filebuff, { binary: true });
                 } else { // generate otherwise md

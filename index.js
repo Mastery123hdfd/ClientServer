@@ -423,7 +423,9 @@ server.on("connection", async (socket,req) => {
 
 
     socket.on("message", async (msg, isBinary) => {
-    console.log("WS: raw message:", msg.toString());
+      if(!isBinary){
+        console.log("WS: raw message:", msg.toString());
+      }
         if (! await ensureRoom(user.prtag, user, socket)) return;
 
         let data = null;
@@ -476,7 +478,7 @@ server.on("connection", async (socket,req) => {
                     type: "imgmeta",
                     name: meta.name,
                     size: meta.size,
-                    type: meta.type,
+                    mimetype: meta.type,
                     id: id
                   }));
                   client.send(dat);
@@ -486,12 +488,13 @@ server.on("connection", async (socket,req) => {
                     type: "regmeta",
                     name: meta.name,
                     size: meta.size,
-                    type: meta.type,
+                    mimetype: meta.type,
                     id: id
                   }));
                   client.send(dat);
                   client.send(filebuff, { binary: true });
                 }
+              console.log("SENT META TO CLIENTS");
               history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);
             }

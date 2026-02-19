@@ -62,7 +62,7 @@ async function initMega() {
 async function getMEGA(){
   while(!megaReady || !megaFileReady){
     console.log("Wait for MEGA login first!");
-    await new Promise(r => setTimeout(r, 200));
+    initMega();
   }
   return megaDB;
 }

@@ -37,6 +37,7 @@ const db = admin.database();
 
 let megaDB = null;
 let megaReady = false;
+let megaFileReady = false;
 
 async function initMega() {
     try {
@@ -45,6 +46,10 @@ async function initMega() {
             password: process.env.MEGA_PASSWORD
         }).ready;
         megaReady = true;
+        megaDB.on('ready', () => {
+          megaFileReady = true;
+          console.log("MEGA filesystem loaded.");
+        });
         console.log("MEGA connected");
     } catch (err) {
         console.error("MEGA INIT ERROR:", err);
@@ -55,7 +60,7 @@ async function initMega() {
 initMega();
 
 async function getMEGA(){
-  while(!megaReady){
+  while(!megaReady || !megaFileReady){
     console.log("Wait for MEGA login first!");
     await new Promise(r => setTimeout(r, 200));
   }
@@ -177,10 +182,6 @@ let regArray =[];
 
 
 history["main"] = [];
-
-
-
-
 
 async function ensureRoom(tag, user, socket) {
   if (!Array.isArray(history[tag])) {

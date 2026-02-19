@@ -36,6 +36,7 @@ admin.initializeApp({
 const db = admin.database();
 
 let megaDB = null;
+let megaReady = false;
 
 async function initMega() {
     try {
@@ -43,7 +44,7 @@ async function initMega() {
             email: process.env.MEGA_EMAIL,
             password: process.env.MEGA_PASSWORD
         }).ready;
-
+        megaReady = true;
         console.log("MEGA connected");
     } catch (err) {
         console.error("MEGA INIT ERROR:", err);
@@ -53,6 +54,13 @@ async function initMega() {
 
 initMega();
 
+async function getMEGA(){
+  while(!megaReady){
+    console.log("Wait for MEGA login first!");
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return megaDB;
+}
 
 function loadSession(token) {
   try{
@@ -189,8 +197,8 @@ async function ensureRoom(tag, user, socket) {
             const data = JSON.parse(line.toString());
             if (data.type === "regmeta" || data.type === "imgmeta") {
               socket.send(JSON.stringify(data));
-              const db = await connectMegaDB();
-              const file = await downloadFromMega(data.id, db);
+              const filedb = await getMEGA();
+              const file = await downloadFromMega(data.id, filedb);
               socket.send(file, { binary: true });
             }
           }
@@ -231,7 +239,7 @@ function compressImage(buffer, mimeType) {
 
 
 async function createFolder(fold){
-  const filedb = megaDB;
+  const filedb = await getMEGA();
   return new Promise((resolve, reject) => {
     filedb.mkdir(fold, (err, folder) => {
       if (err) reject(err);
@@ -241,7 +249,7 @@ async function createFolder(fold){
 }
 
 async function ensureFolder(fold) {
-  const filedb = megaDB;
+  const filedb = await getMEGA();
   // Check if folder already exists
   for (const file of Object.values(filedb.files)) {
     if (file.name === fold && file.directory) {
@@ -252,7 +260,7 @@ async function ensureFolder(fold) {
 }
 
 async function downloadFromMega(nodeId) {
-  const filedb = await connectMegaDB();
+  const filedb = await getMEGA();
   const file = filedb.files[nodeId];
   if (!file) throw new Error("File not found");
 
@@ -475,7 +483,7 @@ server.on("connection", async (socket,req) => {
             return;
           }
           console.log("Data received!!!");
-          const filedb = megaDB;
+          const filedb = await getMEGA();
           let file = await ensureFolder(user.prtag);
           let filebuff = await compressImage(msg, meta.type);
           const val = await new Promise((resolve, reject) => {
@@ -1049,7 +1057,7 @@ server.on("connection", async (socket,req) => {
 
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
-        let megadb = megaDB;
+        let megadb = getMEGA();
         if(isJson(removed)){
           const file = megadb.files[removed.id];
           if(!file){

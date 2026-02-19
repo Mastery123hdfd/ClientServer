@@ -57,7 +57,7 @@ async function initMega() {
     }
 }
 
-initMega();
+
 
 async function getMEGA(){
   while(!megaReady || !megaFileReady){
@@ -405,6 +405,10 @@ const bannedIPs = new Map();
 //======================================================================================================
 //======================================================================================================
 
+server.on('listening', () =>{
+  console.log("Server ready");
+  initMega();
+});
 
 server.on("connection", async (socket,req) => {
     console.log("Client connected");

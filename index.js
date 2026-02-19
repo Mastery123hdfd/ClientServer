@@ -1034,7 +1034,7 @@ server.on("connection", async (socket,req) => {
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
         let megadb = await connectMegaDB();
-        if(isJson(removed){
+        if(isJson(removed)){
           const file = megadb.files[removed.id];
           if(!file){
             console.log("Invalid node id");

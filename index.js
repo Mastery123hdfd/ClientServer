@@ -425,6 +425,8 @@ server.on("connection", async (socket,req) => {
     socket.on("message", async (msg, isBinary) => {
       if(!isBinary){
         console.log("WS: raw message:", msg.toString());
+      } else if (isBinary){
+        console.log("Binary received: " + isBinary + " length: " + msg.length);
       }
         if (! await ensureRoom(user.prtag, user, socket)) return;
 

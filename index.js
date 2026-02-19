@@ -3,13 +3,6 @@ process.on("exit", code => {
 });
 
 const { Storage } = require('megajs');
-async function connectMegaDB(){
-  const storage = await new Storage({
-    email:process.env.MEGA_EMAIL,
-    password:process.env.MEGA_PASSWORD
-  }).ready;
-  return storage;
-}
 
 admin = require("firebase-admin");
 
@@ -41,6 +34,25 @@ admin.initializeApp({
   databaseURL: process.env.FIREBASE_DB_URL
 });
 const db = admin.database();
+
+let megaDB = null;
+
+async function initMega() {
+    try {
+        megaDB = await new Storage({
+            email: process.env.MEGA_EMAIL,
+            password: process.env.MEGA_PASSWORD
+        }).ready;
+
+        console.log("MEGA connected");
+    } catch (err) {
+        console.error("MEGA INIT ERROR:", err);
+        setTimeout(initMega, 3000); // retry
+    }
+}
+
+initMega();
+
 
 function loadSession(token) {
   try{
@@ -219,7 +231,7 @@ function compressImage(buffer, mimeType) {
 
 
 async function createFolder(fold){
-  const filedb = await connectMegaDB();
+  const filedb = megaDB;
   return new Promise((resolve, reject) => {
     filedb.mkdir(fold, (err, folder) => {
       if (err) reject(err);
@@ -229,7 +241,7 @@ async function createFolder(fold){
 }
 
 async function ensureFolder(fold) {
-  const filedb = await connectMegaDB();
+  const filedb = megaDB;
   // Check if folder already exists
   for (const file of Object.values(filedb.files)) {
     if (file.name === fold && file.directory) {
@@ -463,7 +475,7 @@ server.on("connection", async (socket,req) => {
             return;
           }
           console.log("Data received!!!");
-          const filedb = await connectMegaDB();
+          const filedb = megaDB;
           let file = await ensureFolder(user.prtag);
           let filebuff = await compressImage(msg, meta.type);
           const val = await new Promise((resolve, reject) => {
@@ -1037,7 +1049,7 @@ server.on("connection", async (socket,req) => {
 
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
-        let megadb = await connectMegaDB();
+        let megadb = megaDB;
         if(isJson(removed)){
           const file = megadb.files[removed.id];
           if(!file){

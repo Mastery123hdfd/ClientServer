@@ -59,14 +59,6 @@ async function initMega() {
 
 
 
-async function getMEGA(){
-  while(!megaReady || !megaFileReady){
-    console.log("Wait for MEGA login first!");
-    initMega();
-  }
-  return megaDB;
-}
-
 function loadSession(token) {
   try{
   return db.ref("sessions/" + token).once("value").then(snap => snap.val());
@@ -198,7 +190,7 @@ async function ensureRoom(tag, user, socket) {
             const data = JSON.parse(line.toString());
             if (data.type === "regmeta" || data.type === "imgmeta") {
               socket.send(JSON.stringify(data));
-              const filedb = await getMEGA();
+              const filedb = megaDB;
               const file = await downloadFromMega(data.id, filedb);
               socket.send(file, { binary: true });
             }
@@ -240,7 +232,7 @@ function compressImage(buffer, mimeType) {
 
 
 async function createFolder(fold){
-  const filedb = await getMEGA();
+  const filedb = megaDB;
   return new Promise((resolve, reject) => {
     filedb.mkdir(fold, (err, folder) => {
       if (err) reject(err);
@@ -250,7 +242,7 @@ async function createFolder(fold){
 }
 
 async function ensureFolder(fold) {
-  const filedb = await getMEGA();
+  const filedb = megaDB;
   // Check if folder already exists
   for (const file of Object.values(filedb.files)) {
     if (file.name === fold && file.directory) {
@@ -261,7 +253,7 @@ async function ensureFolder(fold) {
 }
 
 async function downloadFromMega(nodeId) {
-  const filedb = await getMEGA();
+  const filedb = megaDB;
   const file = filedb.files[nodeId];
   if (!file) throw new Error("File not found");
 
@@ -488,7 +480,7 @@ server.on("connection", async (socket,req) => {
             return;
           }
           console.log("Data received!!!");
-          const filedb = await getMEGA();
+          const filedb = megaDB;
           let file = await ensureFolder(user.prtag);
           let filebuff = await compressImage(msg, meta.type);
           const val = await new Promise((resolve, reject) => {

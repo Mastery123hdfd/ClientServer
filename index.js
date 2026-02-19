@@ -27,7 +27,7 @@ setInterval(() => {
   last = now;
 }, 500);
 
-
+await setTimeout(initMega, 100);
 
 admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),

@@ -475,8 +475,9 @@ server.on("connection", async (socket,req) => {
           // Distribute to users
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+              let dat;
                 if(meta.isImg){
-                  let dat = (JSON.stringify({
+                  dat = (JSON.stringify({
                     type: "imgmeta",
                     name: meta.name,
                     size: meta.size,
@@ -487,7 +488,7 @@ server.on("connection", async (socket,req) => {
                   client.send(dat);
                   client.send(filebuff, { binary: true });
                 } else { // generate otherwise md
-                  let dat = (JSON.stringify({
+                  dat = (JSON.stringify({
                     type: "regmeta",
                     name: meta.name,
                     size: meta.size,
@@ -496,8 +497,9 @@ server.on("connection", async (socket,req) => {
                   }));
                   client.send(dat);
                   client.send(filebuff, { binary: true });
+                  console.log("SENT META TO CLIENTS");
+                  
                 }
-              console.log("SENT META TO CLIENTS");
               history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);
             }

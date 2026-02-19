@@ -772,6 +772,7 @@ server.on("connection", async (socket,req) => {
               user.awaitingBanTarget = false;
             }
           });
+          return;
         } // I didn't do anything?
 
         // ====================== UNBAN USERS =======================
@@ -789,6 +790,7 @@ server.on("connection", async (socket,req) => {
             bannedIPs.delete(msg);
             socket.send("User " + msg + " has been unbanned.");
           }
+          return;
         }
 
         //====================== RESTRICT ROOM =====================
@@ -952,6 +954,7 @@ server.on("connection", async (socket,req) => {
 
                     client.send("You have been given admin privileges by " + user.moniker);
                     socket.send("Admin privileges given to " + user.awaitingAdminTarget);
+                    updateSession(convertUsertoAccount(cUser),db, cUser.sessionToken);
                     updateLoginPermData(cUser, db);
 
                     user.awaitingAdminTarget = false;
@@ -972,6 +975,7 @@ server.on("connection", async (socket,req) => {
                     client.send("You have been given mod privileges by " + user.moniker);
                     socket.send("Mod privileges given to " + user.awaitingModTarget);
                     updateLoginPermData(cUser, db);
+                    updateSession(convertUsertoAccount(cUser), db, cUser.sessionToken);
                     user.awaitingModTarget = false;
                 }
             });
@@ -1028,7 +1032,11 @@ server.on("connection", async (socket,req) => {
       history[user.prtag].push(taggedMessage);
 
       if (history[user.prtag].length > 350) {
-        history[user.prtag].shift();
+        let removed = history[user.prtag].shift();
+        let megadb = await connectMegaDB();
+        if(isJson(removed){
+          megadb.remove(removed.id);
+        }
       }
       //socket.send("History trimmed");
 

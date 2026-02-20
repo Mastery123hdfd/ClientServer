@@ -520,6 +520,8 @@ server.on("connection", async (socket,req) => {
                     mimetype: meta.type,
                     id: id
                   }));
+
+                  
                   
                   client.send(dat);
                   client.send(filebuff, { binary: true });
@@ -533,9 +535,11 @@ server.on("connection", async (socket,req) => {
                   }));
                   client.send(dat);
                   client.send(filebuff, { binary: true });
-                  console.log("SENT META TO CLIENTS");
+                  
                   
                 }
+              console.log("SENT META TO CLIENTS");
+              console.log("SENT FILES TO CLIENTS");
               history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);
             }

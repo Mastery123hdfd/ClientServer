@@ -1073,14 +1073,13 @@ server.on("connection", async (socket,req) => {
 
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
-        let megadb = megaDB;
         if(isJson(removed)){
-          const file = megadb.files[removed.id];
+          const file = megaDB.files[removed.id];
           if(!file){
             console.log("Invalid node id");
             return;
           }
-          const del = await file.delete(permament);
+          await file.delete(permament);
           
         }
       }

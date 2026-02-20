@@ -1073,7 +1073,7 @@ server.on("connection", async (socket,req) => {
 
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
-        let megadb = getMEGA();
+        let megadb = megaDB;
         if(isJson(removed)){
           const file = megadb.files[removed.id];
           if(!file){

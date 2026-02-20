@@ -33,11 +33,7 @@ setInterval(() => {
 }, 500);
 
 
-admin.initializeApp({
-  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
-  databaseURL: process.env.FIREBASE_DB_URL
-});
-const db = admin.database();
+
 
 
 
@@ -67,6 +63,12 @@ server.on('listening', async () => {
   admin = await getAdmin();
   megaDB = await initMega();
 });
+
+admin.initializeApp({
+  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+  databaseURL: process.env.FIREBASE_DB_URL
+});
+const db = admin.database();
 
 function loadSession(token) {
   try{

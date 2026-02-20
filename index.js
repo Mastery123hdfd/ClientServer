@@ -7,7 +7,7 @@ async function getAdmin(){
   admin = require("firebase-admin");  
   return admin;
 }
-let admin = await getAdmin();
+
 
 
 
@@ -60,9 +60,11 @@ async function initMega() {
 }
 
 let megaDB = null;
+let admin = null;
 
 server.on('listening', async () => {
   console.log("Server ready");
+  admin = await getAdmin();
   megaDB = await initMega();
 });
 

@@ -62,6 +62,7 @@ const server = new WebSocket.Server({ port });
 
 let megaDB = null;
 let admin = null;
+let db = null;
 
 server.on('listening', async () => {
   console.log("Server ready");
@@ -70,13 +71,12 @@ server.on('listening', async () => {
     credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
     databaseURL: process.env.FIREBASE_DB_URL
   });
-  
+  db = admin.database();
+
   megaDB = await initMega();
 });
 
 
-
-const db = admin.database();
 
 function loadSession(token) {
   try{

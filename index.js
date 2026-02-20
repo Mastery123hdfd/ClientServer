@@ -252,9 +252,14 @@ function compressImage(buffer, mimeType) {
     return image.png({ compressionLevel: 9 }).toBuffer();
   } else if (mimeType === "image/webp") {
     return image.webp({ quality: 70 }).toBuffer();
-  } else {
-    // fallback: convert unknown formats to webp
-    return image.webp({ quality: 70 }).toBuffer();
+  } else if(mimeType === "image/gif") {
+    return image.gif().toBuffer();
+  }else if(mimeType === "image/avif") {
+    return image.avif().toBuffer();
+  }
+  else {
+    // fallback: no compression, just return the original buffer
+    return buffer;
   }
 }
 
@@ -523,6 +528,7 @@ server.on("connection", async (socket,req) => {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
               let dat;
                 if(meta.isImg){
+
                   dat = (JSON.stringify({
                     type: "imgmeta",
                     name: meta.name,
@@ -530,9 +536,6 @@ server.on("connection", async (socket,req) => {
                     mimetype: meta.type,
                     id: id
                   }));
-
-                  
-                  
                   client.send(dat);
                   client.send(filebuff, { binary: true });
                 } else { // generate otherwise md

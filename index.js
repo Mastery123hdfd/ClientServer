@@ -61,7 +61,7 @@ async function initMega() {
 
 let megaDB = null;
 
-server.on('listening', () =>{
+server.on('listening', async () => {
   console.log("Server ready");
   megaDB = await initMega();
 });

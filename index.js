@@ -33,10 +33,6 @@ setInterval(() => {
 }, 500);
 
 
-
-
-
-
 async function initMega() {
   const { Storage } = require('megajs');
     try {
@@ -67,13 +63,17 @@ let db = null;
 server.on('listening', async () => {
   console.log("Server ready");
   admin = await getAdmin();
+  console.log("Firebase Admin received");
   admin.initializeApp({
     credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
     databaseURL: process.env.FIREBASE_DB_URL
   });
+  console.log("Firebase initialized!");
   db = admin.database();
+  console.log("Databse loaded!");
 
   megaDB = await initMega();
+  console.log("MEGA database loaded!");
 });
 
 

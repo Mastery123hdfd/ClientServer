@@ -35,29 +35,31 @@ admin.initializeApp({
 });
 const db = admin.database();
 
-let megaDB = null;
-let megaReady = false;
-let megaFileReady = false;
+
 
 async function initMega() {
     try {
-        megaDB = await new Storage({
+        let megaDB = await new Storage({
             email: process.env.MEGA_EMAIL,
             password: process.env.MEGA_PASSWORD
         }).ready;
-        megaReady = true;
         megaDB.on('ready', () => {
-          megaFileReady = true;
           console.log("MEGA filesystem loaded.");
         });
         console.log("MEGA connected");
+        return megaDB;
     } catch (err) {
         console.error("MEGA INIT ERROR:", err);
         setTimeout(initMega, 3000); // retry
     }
 }
 
+let megaDB = null;
 
+server.on('listening', () =>{
+  console.log("Server ready");
+  megaDB = initMega();
+});
 
 function loadSession(token) {
   try{
@@ -397,10 +399,7 @@ const bannedIPs = new Map();
 //======================================================================================================
 //======================================================================================================
 
-server.on('listening', () =>{
-  console.log("Server ready");
-  initMega();
-});
+
 
 server.on("connection", async (socket,req) => {
     console.log("Client connected");

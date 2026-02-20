@@ -536,12 +536,7 @@ server.on("connection", async (socket,req) => {
                     mimetype: meta.type,
                     id: id
                   }));
-                  if (["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"].includes(meta.type)) {
-                    filebuff = await compressImage(msg, meta.type);
-                  } else {
-                  
-                    filebuff = msg;
-                  }
+                  //Compression removed for now, was causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
 
                   client.send(dat);
                   client.send(filebuff, { binary: true });

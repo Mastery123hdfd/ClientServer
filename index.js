@@ -144,7 +144,7 @@ async function loadFromFirebase(db){
                       console.log("Invalid JSON from Firebase", raw);
                       return;
                     }
-                    history[room].push(data);   
+                    history[room].push(JSON.stringify(data));   
                   }
                 } catch(err){
                   console.error("Error processing Firebase entry:", err);

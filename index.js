@@ -2,7 +2,7 @@ process.on("exit", code => {
   console.error("PROCESS EXITED WITH CODE:", code);
 });
 
-const { Storage } = require('megajs');
+
 
 admin = require("firebase-admin");
 
@@ -38,6 +38,7 @@ const db = admin.database();
 
 
 async function initMega() {
+  const { Storage } = require('megajs');
     try {
         let megaDB = await new Storage({
             email: process.env.MEGA_EMAIL,

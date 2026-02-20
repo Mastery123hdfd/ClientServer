@@ -516,7 +516,7 @@ server.on("connection", async (socket,req) => {
           console.log("Data received!!!");
           const filedb = megaDB;
           let file = await ensureFolder(user.prtag);
-          let filebuff = await compressImage(msg, meta.type);
+          let filebuff = msg;
           const val = await new Promise((resolve, reject) => {
             const up = filedb.upload({ name: meta.name, target: file }, filebuff);
             up.on("complete", resolve);
@@ -536,6 +536,13 @@ server.on("connection", async (socket,req) => {
                     mimetype: meta.type,
                     id: id
                   }));
+                  if (["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"].includes(meta.type)) {
+                    filebuff = await compressImage(msg, meta.type);
+                  } else {
+                  
+                    filebuff = msg;
+                  }
+
                   client.send(dat);
                   client.send(filebuff, { binary: true });
                 } else { // generate otherwise md

@@ -71,6 +71,7 @@ server.on('listening', async () => {
   console.log("Firebase initialized!");
   db = admin.database();
   await loadFromFirebase(db);
+  await loadAccounts(db);
   
 
   megaDB = await initMega();
@@ -377,22 +378,25 @@ aclist = [];
 modArray = [];
 adminArray = [];
 regArray = [];
-try{
-db.ref("logindata/accountdata").once("value", snapshot => {
-  snapshot.forEach(child => {
-    const a = child.val();
-    aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
-  });
-  for (const a of aclist) {
-    if (a.mod) modArray.push(a);
-    if (a.admin) adminArray.push(a);
-    regArray.push(a);
-    loginfo[a.user] = a.pass; 
-  } 
-  console.log("Login accounts loaded."); 
-});
-} catch(err){
-  console.error("Error loading login accounts from Firebase:", err);
+
+async function loadAccounts(db){
+  try{
+    db.ref("logindata/accountdata").once("value", snapshot => {
+      snapshot.forEach(child => {
+        const a = child.val();
+        aclist.push(new Account(a.user, a.pass, a.admin, a.mod, a.disp));
+      });
+      for (const a of aclist) {
+        if (a.mod) modArray.push(a);
+        if (a.admin) adminArray.push(a);
+        regArray.push(a);
+        loginfo[a.user] = a.pass; 
+      } 
+      console.log("Login accounts loaded."); 
+    });
+  } catch(err){
+    console.error("Error loading login accounts from Firebase:", err);
+  }
 }
 //^Loads login data
 function ensureAccount(user, pass){

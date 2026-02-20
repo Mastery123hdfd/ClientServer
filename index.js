@@ -4,7 +4,7 @@ process.on("exit", code => {
 
 
 async function getAdmin(){
-  admin = require("firebase-admin");  
+  const admin = require("firebase-admin");  
   return admin;
 }
 
@@ -70,7 +70,8 @@ server.on('listening', async () => {
   });
   console.log("Firebase initialized!");
   db = admin.database();
-  console.log("Databse loaded!");
+  await loadFromFirebase(db);
+  
 
   megaDB = await initMega();
   console.log("MEGA database loaded!");
@@ -108,9 +109,9 @@ function ValidateName(name) {
 
 let restrictedRooms = [];
 
-//load from firebase
-try{
-db.ref("chatlog").once("value", snapshot => {
+async function loadFromFirebase(db){
+  try{
+    db.ref("chatlog").once("value", snapshot => {
      snapshot.forEach(roomSnap => {
          const room = roomSnap.key;
           history[room] = [];
@@ -144,10 +145,11 @@ db.ref("chatlog").once("value", snapshot => {
            restrictedRooms.push(roomSnap.key);
          }
         }); 
-    console.log("History loaded from Firebase"); 
-  });
-} catch(err){
-  console.error("Error loading history from Firebase:", err);
+      console.log("History loaded from Firebase"); 
+    });
+  } catch(err){
+    console.error("Error loading history from Firebase:", err);
+  }
 }
 function isJson(msg){
   let data = null;

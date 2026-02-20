@@ -19,6 +19,8 @@ process.on("unhandledRejection", err => {
   console.error("UNHANDLED REJECTION:", err);
 });
 
+
+
 let last = Date.now();
 
 setInterval(() => {
@@ -31,10 +33,6 @@ setInterval(() => {
 
   last = now;
 }, 500);
-
-
-
-
 
 
 async function initMega() {
@@ -75,6 +73,14 @@ server.on('listening', async () => {
 
   megaDB = await initMega();
 });
+
+
+
+
+
+
+
+
 
 
 

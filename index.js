@@ -66,13 +66,16 @@ let admin = null;
 server.on('listening', async () => {
   console.log("Server ready");
   admin = await getAdmin();
+  admin.initializeApp({
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+    databaseURL: process.env.FIREBASE_DB_URL
+  });
+  
   megaDB = await initMega();
 });
 
-admin.initializeApp({
-  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
-  databaseURL: process.env.FIREBASE_DB_URL
-});
+
+
 const db = admin.database();
 
 function loadSession(token) {

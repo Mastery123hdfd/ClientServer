@@ -3,8 +3,13 @@ process.on("exit", code => {
 });
 
 
+async function getAdmin(){
+  admin = require("firebase-admin");  
+  return admin;
+}
+let admin = await getAdmin();
 
-admin = require("firebase-admin");
+
 
 process.on("uncaughtException", err => {
   console.error("UNCAUGHT EXCEPTION:", err);
@@ -27,7 +32,6 @@ setInterval(() => {
   last = now;
 }, 500);
 
-await setTimeout(initMega, 100);
 
 admin.initializeApp({
   credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
@@ -59,7 +63,7 @@ let megaDB = null;
 
 server.on('listening', () =>{
   console.log("Server ready");
-  megaDB = initMega();
+  megaDB = await initMega();
 });
 
 function loadSession(token) {

@@ -55,6 +55,11 @@ async function initMega() {
     }
 }
 
+const WebSocket = require("ws");
+
+const port = process.env.PORT || 10000;
+const server = new WebSocket.Server({ port });
+
 let megaDB = null;
 let admin = null;
 
@@ -80,10 +85,7 @@ function loadSession(token) {
 }
 
 
-const WebSocket = require("ws");
 
-const port = process.env.PORT || 10000;
-const server = new WebSocket.Server({ port });
 
 console.log("WebSocket server running on port", String(port).replace(/\n|\r/g, ""));
 

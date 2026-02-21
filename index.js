@@ -510,6 +510,8 @@ server.on("connection", async (socket,req) => {
           let file = await ensureFolder(user.prtag);
           let filebuff = msg;
           fs.writeFileSync("file_made.bin", filebuff);
+          let id = "";
+          try{
           const val = await new Promise((resolve, reject) => {
             const up = filedb.upload(
             { name: meta.name, target: file, data: filebuff, size: meta.size }
@@ -518,9 +520,15 @@ server.on("connection", async (socket,req) => {
             up.on("complete", resolve);
             up.on("error", reject);
           });
-
           fs.writeFileSync("mega_yokiad.bin", filebuff);
-          const id = val.nodeId;
+          id = val.nodeId;
+        } catch(err){
+          console.error("Error uploading to MEGA:", err);
+          socket.send("Error uploading file. Please try again.");
+          return;
+        }
+
+          
           // Distribute to users
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {

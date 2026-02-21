@@ -499,11 +499,11 @@ server.on("connection", async (socket,req) => {
   //===================================================================================================================
 
 
-    socket.on("message", async (text, isBinary) => {
+    socket.on("message", async (msg, isBinary) => {
       if(!isBinary){
-        console.log("WS: raw message:", text.toString());
+        console.log("WS: raw message:", msg.toString());
       } else if (isBinary){
-        console.log("Binary received: " + isBinary + " length: " + text.length);
+        console.log("Binary received: " + isBinary + " length: " + msg.length);
       }
         if (! await ensureRoom(user.prtag, user, socket)) return;
 
@@ -580,13 +580,13 @@ server.on("connection", async (socket,req) => {
                   
                   
                 }
-              console.log("SENT META TO CLIENTS: " + dat);
-              console.log("SENT FILES TO CLIENTS");
-              const fs = require("fs");
-              fs.writeFileSync("server_sent.bin", filebuff);
-              console.log("Wrote raw binary to server_sent.bin");
+                console.log("SENT META TO CLIENTS: " + dat);
+                console.log("SENT FILES TO CLIENTS");
+                const fs = require("fs");
+                fs.writeFileSync("server_sent.bin", filebuff);
+                console.log("Wrote raw binary to server_sent.bin");
 
-              history[user.prtag].push(dat);
+                history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);
             }
           }

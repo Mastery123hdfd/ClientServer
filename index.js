@@ -82,7 +82,7 @@ const httpServer = http.createServer((req, res) => {
 });
 
 // Attach WebSocket server to the SAME HTTP server
-const server = new WebSocket.Server({ httpServer });
+const server = new WebSocket.Server({ server: httpServer });
 
 
 let megaDB = null;

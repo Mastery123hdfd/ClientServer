@@ -222,6 +222,7 @@ async function ensureRoom(tag, user, socket) {
               const filedb = megaDB;
               const file = await downloadFromMega(data.id, filedb);
               socket.send(file, { binary: true });
+              continue;
             }
           }
         } catch (e) {

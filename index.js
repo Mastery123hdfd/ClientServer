@@ -547,8 +547,8 @@ server.on("connection", async (socket,req) => {
                 console.log("SENT META TO CLIENTS: " + dat);
                 console.log("SENT FILES TO CLIENTS");
                 const fs = require("fs");
-                fs.writeFileSync("server_sent.bin", filebuff);
-                console.log("Wrote raw binary to server_sent.bin");
+                fs.writeFileSync("server_sent.jpg", filebuff);
+                console.log("Wrote raw binary to server_sent.jpg");
 
                 history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);

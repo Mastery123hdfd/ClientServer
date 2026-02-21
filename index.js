@@ -89,7 +89,12 @@ let megaDB = null;
 let admin = null;
 let db = null;
 
-httpServer.on('listening', async () => {
+httpServer.listen(port, () => {
+    console.log("HTTP + WebSocket server running on port", port);
+});
+
+
+server.on('listening', async () => {
   console.log("Server ready");
   admin = await getAdmin();
   console.log("Firebase Admin received");
@@ -106,13 +111,6 @@ httpServer.on('listening', async () => {
   megaDB = await initMega();
   console.log("MEGA database loaded!");
 });
-
-
-
-
-
-
-
 
 
 

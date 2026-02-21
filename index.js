@@ -61,35 +61,37 @@ const port = process.env.PORT || 10000;
 
 // Create ONE HTTP server
 const httpServer = http.createServer((req, res) => {
-    if (req.url === "/debugbin") {
-        const fs = require("fs");
-        try {
-            const data1 = fs.readFileSync("upload.bin");
-            res.writeHead(200, {
-                "Content-Type": "application/octet-stream",
-                "Content-Disposition": "attachment; filename=upload.bin"
-            });
-            const data2 = fs.readFileSync("file`_made.bin");
-            res.writeHead(200, {
-                "Content-Type": "application/octet-stream",
-                "Content-Disposition": "attachment; filename=file_made.bin"
-            });
-            const data3 = fs.readFileSync("mega_yokiad.bin");
-            res.writeHead(200, {
-                "Content-Type": "application/octet-stream",
-                "Content-Disposition": "attachment; filename=mega_yokiad.bin"
-            });
-            const data4 = fs.readFileSync("server_sent.bin");
-            res.writeHead(200, {
-                "Content-Type": "application/octet-stream",
-                "Content-Disposition": "attachment; filename=server_sent.bin"
-            });
-            res.end(data1 + data2 + data3 + data4);
-        } catch (err) {
-            res.writeHead(404);
-            res.end("No debug file found");
-        }
-        return;
+    if (!req.url.startsWith("/debugbin")) {
+        res.writeHead(200);
+        return res.end("Server running");
+    }
+
+    const url = new URL(req.url, "http://localhost");
+    const which = url.searchParams.get("file");
+
+    const map = {
+        upload: "upload.bin",
+        made: "file_made.bin",
+        mega: "mega_yokiad.bin",
+        server: "server_sent.bin"
+    };
+
+    const filename = map[which];
+
+    if (!filename || !fs.existsSync(filename)) {
+        res.writeHead(404);
+        return res.end("File not found");
+    }
+
+    const data = fs.readFileSync(filename);
+
+    res.writeHead(200, {
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": `attachment; filename=${filename}`
+    });
+
+    res.end(data);
+
     }
 
     res.writeHead(200);

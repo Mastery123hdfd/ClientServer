@@ -60,7 +60,7 @@ const WebSocket = require("ws");
 const port = process.env.PORT || 10000;
 
 // Create ONE HTTP server
-http.createServer((req, res) => {
+const httpServer = http.createServer((req, res) => {
     if (req.url === "/debugbin") {
         const fs = require("fs");
         try {
@@ -82,7 +82,7 @@ http.createServer((req, res) => {
 });
 
 // Attach WebSocket server to the SAME HTTP server
-const server = new WebSocket.Server({ server });
+const server = new WebSocket.Server({ httpServer });
 
 
 let megaDB = null;

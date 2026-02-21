@@ -498,9 +498,6 @@ server.on("connection", async (socket,req) => {
         console.log("Binary received: " + isBinary + " length: " + msg.length);
       }
         if (! await ensureRoom(user.prtag, user, socket)) return;
-
-        
-
         //==================== HANDLE ACTUAL DATA ==========================
         if(isBinary){
           if(!meta){
@@ -561,7 +558,7 @@ server.on("connection", async (socket,req) => {
           return;
         }
 
-        //==================== PRASE JSON ===============================
+        //==================== PARSE JSON ===============================
         
         let data = null;
         let raw = null;
@@ -577,8 +574,8 @@ server.on("connection", async (socket,req) => {
           }
           text = data?.msg || raw;
         }
-      
-        if (msg === "") return;
+
+        if(text == "") return;
 
         user.active = true;
 

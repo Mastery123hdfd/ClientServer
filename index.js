@@ -504,15 +504,18 @@ server.on("connection", async (socket,req) => {
             console.log("No metadata sent!");
             return;
           }
+          const fs = require("fs");
           console.log("Data received!!!");
           const filedb = megaDB;
           let file = await ensureFolder(user.prtag);
           let filebuff = msg;
+          fs.writeFileSync("file_made.bin", filebuff);
           const val = await new Promise((resolve, reject) => {
             const up = filedb.upload({ name: meta.name, target: file }, filebuff);
             up.on("complete", resolve);
             up.on("error", reject);
           });
+          fs.writeFileSync("mega)yokiad.bin", filebuff);
           const id = val.nodeId;
           // Distribute to users
           for (const [client, cUser] of clients) {
@@ -528,6 +531,8 @@ server.on("connection", async (socket,req) => {
                     id: id
                   }));
                   //Compression removed for now, was causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
+                  
+                  fs.writeFileSync("image_upload.bin", filebuff);
 
                   client.send(dat);
                   client.send(filebuff, { binary: true });
@@ -539,16 +544,18 @@ server.on("connection", async (socket,req) => {
                     mimetype: meta.type,
                     id: id
                   }));
+
+                  fs.writeFileSync("regular_upload.bin", filebuff);
+
                   client.send(dat);
                   client.send(filebuff, { binary: true });
-                  
-                  
+
                 }
                 console.log("SENT META TO CLIENTS: " + dat);
                 console.log("SENT FILES TO CLIENTS");
-                const fs = require("fs");
-                fs.writeFileSync("server_sent.jpg", filebuff);
-                console.log("Wrote raw binary to server_sent.jpg");
+                
+                fs.writeFileSync("server_sent.bin", filebuff);
+                console.log("Wrote raw binary to server_sent.bin");
 
                 history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);

@@ -522,11 +522,9 @@ server.on("connection", async (socket,req) => {
           });
           fs.writeFileSync("mega_yokiad.bin", filebuff);
           id = val.nodeId;
-        } catch(err){
-          console.error("Error uploading to MEGA:", err);
-          socket.send("Error uploading file. Please try again.");
-          return;
-        }
+          } catch(err){
+            console.log("Error uploading to MEGA: ", err);
+          }
 
           
           // Distribute to users

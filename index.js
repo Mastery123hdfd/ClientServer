@@ -511,10 +511,14 @@ server.on("connection", async (socket,req) => {
           let filebuff = msg;
           fs.writeFileSync("file_made.bin", filebuff);
           const val = await new Promise((resolve, reject) => {
-            const up = filedb.upload({ name: meta.name, target: file }, filebuff);
+            const up = filedb.upload(
+            { name: meta.name, target: file, data: filebuff }
+            );
+
             up.on("complete", resolve);
             up.on("error", reject);
           });
+
           fs.writeFileSync("mega_yokiad.bin", filebuff);
           const id = val.nodeId;
           // Distribute to users

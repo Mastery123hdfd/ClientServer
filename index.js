@@ -238,26 +238,18 @@ async function ensureRoom(tag, user, socket) {
       return true;
     } else {
       socket.send("Regular Users cannot create their own rooms. Use the room code given to you by a mod.");
+      
       for (const line of history["main"]) {
-        try {
-          if (isJson(line)) {
-            const data = JSON.parse(line.toString());
-            if (data.type === "regmeta" || data.type === "imgmeta") {
-              socket.send(JSON.stringify(data));
-              const filedb = megaDB;
-              const file = await downloadFromMega(data.id, filedb);
-              socket.send(file, { binary: true });
-              continue;
-            }
-          }
-        } catch (e) {
-          console.error("Error sending MEGA file:", e);
-        }
+        
         socket.send(line);
+        continue;
       }
+
       return false;
     }
   }
+
+  user.prtag = tag;
 
   try {
     await ensureFolder(tag);
@@ -507,32 +499,7 @@ server.on("connection", async (socket,req) => {
       }
         if (! await ensureRoom(user.prtag, user, socket)) return;
 
-        let data = null;
-        let raw = null;
-        let text = "";
-        if(!isBinary){
-          raw = msg.toString();
-          if (raw.startsWith("{")) {
-            try {
-                data = JSON.parse(raw);
-            } catch (e) {
-                console.log("Invalid JSON from client:", raw);
-            }
-          }
-          text = data?.msg || raw;
-        }
-      
-        if (text === "") return;
-
-        user.active = true;
-
-        if (firstmessage) {
-            for (const line of history[user.prtag]) {
-                socket.send(line);
-            }
-            socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). ");
-            firstmessage = false;
-        }
+        
 
         //==================== HANDLE ACTUAL DATA ==========================
         if(isBinary){
@@ -591,6 +558,41 @@ server.on("connection", async (socket,req) => {
             }
           }
           meta = null;
+          return;
+        }
+
+        //==================== PRASE JSON ===============================
+        
+        let data = null;
+        let raw = null;
+        let text = "";
+        if(!isBinary){
+          raw = msg.toString();
+          if (raw.startsWith("{")) {
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                console.log("Invalid JSON from client:", raw);
+            }
+          }
+          text = data?.msg || raw;
+        }
+      
+        if (msg === "") return;
+
+        user.active = true;
+
+        if (firstmessage) {
+            for (const line of history[user.prtag]) {
+                socket.send(line);
+                continue;
+            }
+            socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). ");
+            firstmessage = false;
+        }
+
+        //==================== HANDLE EMPTY MESSAGE ==========================
+        if(text === ""){
           return;
         }
 
@@ -668,7 +670,23 @@ server.on("connection", async (socket,req) => {
           user.prtag = newPrTag;
 
           for(const line of history[newPrTag]){
-            socket.send(line);
+            try {
+              if (isJson(line)) {
+                const data = JSON.parse(line.toString());
+                if (data.type === "regmeta" || data.type === "imgmeta") {
+                  socket.send(JSON.stringify(data));
+                  const filedb = megaDB;
+                  const file = await downloadFromMega(data.id, filedb);
+                  socket.send(file, { binary: true });
+                  continue;
+                }
+              }
+              else{
+                socket.send(line);
+              }
+            } catch (e) {
+              console.error("Error sending MEGA file:", e);
+            }
           }
           return;
         }

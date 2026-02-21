@@ -61,19 +61,21 @@ const port = process.env.PORT || 10000;
 
 // Create ONE HTTP server
 const httpServer = http.createServer((req, res) => {
-  if (req.url === "/debugbin") {
-    const fs = require("fs");
-    try {
-      const data = fs.readFileSync("file_made.bin");
-      res.writeHead(200, {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": "attachment;
-          filename=file_made.bin" 
-      }); res.end(data); 
-    } catch (err) { 
-      res.writeHead(404);
-      res.end("No debug file found"); 
-    } return; 
+ if (req.url === "/debugbin") {
+   const fs = require("fs"); 
+   try {
+     const data = fs.readFileSync("file_made.bin");
+     res.writeHead(200, {
+       "Content-Type": "application/octet-stream",
+       "Content-Disposition": "attachment;
+         filename=file_made.bin" });
+     res.end(data);
+   } catch (err) { 
+     res.writeHead(404);
+     res.end("No debug file found");
+   } return;
+ }
+  return; 
   } res.writeHead(200); 
   res.end("Server is running");
 });

@@ -512,7 +512,7 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           const val = await new Promise((resolve, reject) => {
             const up = filedb.upload(
-            { name: meta.name, target: file, data: filebuff }
+            { name: meta.name, target: file, data: filebuff, size: meta.size }
             );
 
             up.on("complete", resolve);

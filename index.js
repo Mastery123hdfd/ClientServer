@@ -64,12 +64,27 @@ const httpServer = http.createServer((req, res) => {
     if (req.url === "/debugbin") {
         const fs = require("fs");
         try {
-            const data = fs.readFileSync("server_sent.bin");
+            const data1 = fs.readFileSync("upload.bin");
+            res.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": "attachment; filename=upload.bin"
+            });
+            const data2 = fs.readFileSync("file`_made.bin");
+            res.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": "attachment; filename=file_made.bin"
+            });
+            const data3 = fs.readFileSync("mega_yokiad.bin");
+            res.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": "attachment; filename=mega_yokiad.bin"
+            });
+            const data4 = fs.readFileSync("server_sent.bin");
             res.writeHead(200, {
                 "Content-Type": "application/octet-stream",
                 "Content-Disposition": "attachment; filename=server_sent.bin"
             });
-            res.end(data);
+            res.end(data1 + data2 + data3 + data4);
         } catch (err) {
             res.writeHead(404);
             res.end("No debug file found");
@@ -515,7 +530,7 @@ server.on("connection", async (socket,req) => {
             up.on("complete", resolve);
             up.on("error", reject);
           });
-          fs.writeFileSync("mega)yokiad.bin", filebuff);
+          fs.writeFileSync("mega_yokiad.bin", filebuff);
           const id = val.nodeId;
           // Distribute to users
           for (const [client, cUser] of clients) {
@@ -532,7 +547,7 @@ server.on("connection", async (socket,req) => {
                   }));
                   //Compression removed for now, was causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
                   
-                  fs.writeFileSync("image_upload.bin", filebuff);
+                  fs.writeFileSync("upload.bin", filebuff);
 
                   client.send(dat);
                   client.send(filebuff, { binary: true });
@@ -545,7 +560,7 @@ server.on("connection", async (socket,req) => {
                     id: id
                   }));
 
-                  fs.writeFileSync("regular_upload.bin", filebuff);
+                  fs.writeFileSync("upload.bin", filebuff);
 
                   client.send(dat);
                   client.send(filebuff, { binary: true });

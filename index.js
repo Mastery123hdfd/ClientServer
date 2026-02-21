@@ -187,9 +187,9 @@ async function loadFromFirebase(db){
     console.error("Error loading history from Firebase:", err);
   }
 }
-function isJson(msg){
+function isJson(text){
   let data = null;
-  let raw = msg.toString();
+  let raw = text.toString();
 
   if (raw.startsWith("{")) {
       try {
@@ -499,18 +499,19 @@ server.on("connection", async (socket,req) => {
   //===================================================================================================================
 
 
-    socket.on("message", async (msg, isBinary) => {
+    socket.on("message", async (text, isBinary) => {
       if(!isBinary){
-        console.log("WS: raw message:", msg.toString());
+        console.log("WS: raw message:", text.toString());
       } else if (isBinary){
-        console.log("Binary received: " + isBinary + " length: " + msg.length);
+        console.log("Binary received: " + isBinary + " length: " + text.length);
       }
         if (! await ensureRoom(user.prtag, user, socket)) return;
 
         let data = null;
         let raw = null;
+        let text = "";
         if(!isBinary){
-          raw = msg.toString();
+          raw = text.toString();
           if (raw.startsWith("{")) {
             try {
                 data = JSON.parse(raw);
@@ -518,10 +519,10 @@ server.on("connection", async (socket,req) => {
                 console.log("Invalid JSON from client:", raw);
             }
           }
-          msg = data?.msg || raw;
+          text = data?.text || raw;
         }
       
-        if (msg === "") return;
+        if (text === "") return;
 
         user.active = true;
 
@@ -596,7 +597,7 @@ server.on("connection", async (socket,req) => {
         // ===================== NAME CHANGE HANDLER =====================
 
         if (user.newName) {
-            const newMoniker = msg?.trim();
+            const newMoniker = text?.trim();
 
             if (!newMoniker || !ValidateName(newMoniker)) {
                 socket.send("Invalid Moniker.");
@@ -614,7 +615,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== CHANGE NAME ========================
 
-        if((msg == "/changename" || msg == "/changemoniker") && user.loggedIn){
+        if((text == "/changename" || text == "/changemoniker") && user.loggedIn){
           socket.send("Please input your new name.");
           user.newName = true;
           return;
@@ -622,7 +623,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== Get Users ========================
 
-        if(msg == "/getusers"){
+        if(text == "/getusers"){
           socket.send("================= USERS IN ROOM =================");
           for(const [client, cUser] of clients){
             if(client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag){
@@ -674,21 +675,21 @@ server.on("connection", async (socket,req) => {
 
         //========================== Image Meta Handler ===============================
         if(data && data.type === "imgmeta"){
-          meta = {name: data.msg, size: data.v1, type: data.v2, isImg: true, prtag: data.prtag};
+          meta = {name: data.text, size: data.v1, type: data.v2, isImg: true, prtag: data.prtag};
           console.log("Image Meta created: "+  meta.name);
           return;
         }
       
         //=========================== Reg Meta Handler ================================
         if(data && data.type === "regmeta"){
-          meta = {name: data.msg, size: data.v1, type: data.v2, isImg: false, prtag: data.prtag};
+          meta = {name: data.text, size: data.v1, type: data.v2, isImg: false, prtag: data.prtag};
           console.log("Non-image Meta Craeted: "+ meta.name);
           return;
         }
 
       // ===================== HELP =====================
 
-      if (msg === "/help") {
+      if (text === "/help") {
         for (const k of cmdliststring) {
             socket.send(k);
         }
@@ -697,7 +698,7 @@ server.on("connection", async (socket,req) => {
 
       // ===================== LOG OUT =====================
 
-      if (msg == "/logout") {
+      if (text == "/logout") {
             if (user.sessionToken) {
                 db.ref("sessions/" + user.sessionToken).remove();
             }
@@ -808,7 +809,7 @@ server.on("connection", async (socket,req) => {
       // ============================================================
       // ======================= COMMAND MODE =======================
       // ============================================================
-      if(msg == "/cmd"){
+      if(text == "/cmd"){
         socket.send("Command Mode Activated. Do /cmdoff to disable.");
         command = true;
         return;
@@ -818,7 +819,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== STRIKE MESSAGE =====================
 
-        if (msg == "/strikemsg") {
+        if (text == "/strikemsg") {
           console.log("Striked 1");
           history[user.prtag].pop();
           let taggedMessage = JSON.stringify({ type: "strikemsg" });
@@ -838,7 +839,7 @@ server.on("connection", async (socket,req) => {
           return;
         }
         // ===================== BAN USER ==========================
-        if (msg == "/banuser" && user.admin) {
+        if (text == "/banuser" && user.admin) {
           socket.send("Please input the username of the user you wish to ban");
           user.awaitingBanTarget = true;
           return;
@@ -848,10 +849,10 @@ server.on("connection", async (socket,req) => {
 
         if (user.awaitingBanTarget) {
           clients.forEach((cUser, client) => {
-            if (cUser.moniker === msg) {
+            if (cUser.moniker === text) {
               if (client._socket && client._socket.remoteAddress) {
                 const ip = client._socket.remoteAddress;
-                if (!bannedIPs.has(msg)) {
+                if (!bannedIPs.has(text)) {
                   bannedIPs.set(cUser.moniker, ip);
                 }
               }
@@ -866,7 +867,7 @@ server.on("connection", async (socket,req) => {
 
         // ====================== UNBAN USERS =======================
         
-        if (msg == "/unban" && user.admin) {
+        if (text == "/unban" && user.admin) {
           socket.send("Please input the username of the user you wish to unban");
           user.awaitingUnbanTarget = true;
           return;
@@ -875,16 +876,16 @@ server.on("connection", async (socket,req) => {
         // ===================== HANDLE UNBAN TARGET ==========================
 
         if(user.awaitingUnbanTarget){
-          if(bannedIPs.has(msg)){
-            bannedIPs.delete(msg);
-            socket.send("User " + msg + " has been unbanned.");
+          if(bannedIPs.has(text)){
+            bannedIPs.delete(text);
+            socket.send("User " + text + " has been unbanned.");
           }
           return;
         }
 
         //====================== RESTRICT ROOM =====================
 
-        if(msg == "/restrictroom" && user.admin){
+        if(text == "/restrictroom" && user.admin){
           if(!restrictedRooms.includes(user.prtag)){
             restrictedRooms.push(user.prtag);
           }
@@ -899,7 +900,7 @@ server.on("connection", async (socket,req) => {
 
         //======================= UNRESTRICT ROOM =====================
         
-        if(msg == "/unrestrictroom" && user.admin){
+        if(text == "/unrestrictroom" && user.admin){
           if(restrictedRooms.includes(user.prtag)){
             restrictedRooms = restrictedRooms.filter((restrictedRooms) => restrictedRooms !== user.prtag);
           }
@@ -912,7 +913,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== CLEAR HISTORY =====================
 
-        if (msg == "/clearhist" && user.admin) {
+        if (text == "/clearhist" && user.admin) {
 
           history[user.prtag] = [];
           let taggedMessage = JSON.stringify({ type: "clearHistory" });
@@ -927,7 +928,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== GET PRIVATE ROOM LIST =====================
 
-        if (msg == "/getprlist" && user.mod) {
+        if (text == "/getprlist" && user.mod) {
 
           socket.send("====Available Rooms====");
 
@@ -939,7 +940,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== GET HISTORY LENGTH =====================
 
-        if (msg === "/gethistlength" && user.admin) {
+        if (text === "/gethistlength" && user.admin) {
   
             /*socket.send("=== /gethistlength DEBUG START ===");
             socket.send("user.prtag:", user.prtag);
@@ -958,7 +959,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== DELETE ROOM =====================
 
-        if (msg == "/delroom" && user.admin) {
+        if (text == "/delroom" && user.admin) {
 
           if (user.prtag == "main") {
 
@@ -992,7 +993,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== GET PLAYER LOCATION =====================
 
-        if (msg == "/getPlayerLoc" && user.admin) {
+        if (text == "/getPlayerLoc" && user.admin) {
 
           for (const [client, cUser] of clients) {
               if (client.readyState === WebSocket.OPEN && cUser.active) {
@@ -1006,7 +1007,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== GIVE SELF MOD =====================
 
-        if (msg == "/giveSelfMod" && user.admin) {
+        if (text == "/giveSelfMod" && user.admin) {
           user.mod = true;
           updateLoginPermData(user, db);
           return;
@@ -1014,7 +1015,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== GIVE OTHER MOD =====================
 
-        if (msg == "/giveOtherMod" && user.admin) {
+        if (text == "/giveOtherMod" && user.admin) {
 
           socket.send("Please input the username of the user you wish to give mod privileges to");
           user.awaitingModTarget = true;
@@ -1023,7 +1024,7 @@ server.on("connection", async (socket,req) => {
 //Random indent for some reason?
           // ===================== GIVE OTHER ADMIN =====================
 
-          if (msg == "/giveOtherAdmin" && user.admin) {
+          if (text == "/giveOtherAdmin" && user.admin) {
 
               socket.send("Please input the username of the user you wish to give admin to");
               user.awaitingAdminTarget = true;
@@ -1036,7 +1037,7 @@ server.on("connection", async (socket,req) => {
 
             clients.forEach((cUser, client) => {
 
-                if (cUser.moniker === msg) {
+                if (cUser.moniker === text) {
 
                     cUser.admin = true;
                     cUser.mod = true;
@@ -1057,7 +1058,7 @@ server.on("connection", async (socket,req) => {
 
             clients.forEach((cUser, client) => {
 
-                if (cUser.moniker === msg) {
+                if (cUser.moniker === text) {
 
                     cUser.mod = true;
 
@@ -1072,7 +1073,7 @@ server.on("connection", async (socket,req) => {
 
           // ===================== COMMAND MODE OFF =====================
 
-          if (msg == "/cmdoff") {
+          if (text == "/cmdoff") {
             socket.send("Command Mode Deactivated");
             command = false;
             return;
@@ -1090,13 +1091,13 @@ server.on("connection", async (socket,req) => {
         return;
       } //super janky catch that prevents the login from being sent because its kind of broken xD
 
-      let taggedString = `(${timestamp}) | ${user.moniker}: ${msg}`;
+      let taggedString = `(${timestamp}) | ${user.moniker}: ${text}`;
       
 
       if (user.admin) {
-        taggedString = `(${timestamp}) | [ADMIN] ${user.moniker}: ${msg}`;
+        taggedString = `(${timestamp}) | [ADMIN] ${user.moniker}: ${text}`;
       } else if (user.mod) {
-        taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${msg}`;
+        taggedString = `(${timestamp}) | [MOD] ${user.moniker}: ${text}`;
       }
       //socket.send("String generated");
       try{

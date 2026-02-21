@@ -19,6 +19,19 @@ process.on("unhandledRejection", err => {
   console.error("UNHANDLED REJECTION:", err);
 });
 
+const http = require("http");
+
+http.createServer((req, res) => {
+    if (req.url === "/debugbin") {
+        const fs = require("fs");
+        const data = fs.readFileSync("server_sent.bin");
+        res.writeHead(200, {
+            "Content-Type": "application/octet-stream",
+            "Content-Disposition": "attachment; filename=server_sent.bin"
+        });
+        res.end(data);
+    }
+}).listen(10001);
 
 
 let last = Date.now();
@@ -557,8 +570,8 @@ server.on("connection", async (socket,req) => {
               console.log("SENT META TO CLIENTS: " + dat);
               console.log("SENT FILES TO CLIENTS");
               const fs = require("fs");
-              fs.writeFileSync("server_test_output.bin", filebuff);
-              console.log("Wrote raw binary to server_test_output.bin");
+              fs.writeFileSync("server_sent.bin", filebuff);
+              console.log("Wrote raw binary to server_sent.bin");
 
               history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);

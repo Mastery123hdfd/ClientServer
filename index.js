@@ -511,7 +511,7 @@ server.on("connection", async (socket,req) => {
         let raw = null;
         let text = "";
         if(!isBinary){
-          raw = text.toString();
+          raw = msg.toString();
           if (raw.startsWith("{")) {
             try {
                 data = JSON.parse(raw);
@@ -519,7 +519,7 @@ server.on("connection", async (socket,req) => {
                 console.log("Invalid JSON from client:", raw);
             }
           }
-          text = data?.text || raw;
+          text = data?.msg || raw;
         }
       
         if (text === "") return;

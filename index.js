@@ -91,9 +91,6 @@ const httpServer = http.createServer((req, res) => {
     });
 
     res.end(data);
-
-    }
-
     res.writeHead(200);
     res.end("Server is running");
 });

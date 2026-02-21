@@ -553,7 +553,7 @@ server.on("connection", async (socket,req) => {
                   
                   
                 }
-              console.log("SENT META TO CLIENTS");
+              console.log("SENT META TO CLIENTS: " + dat);
               console.log("SENT FILES TO CLIENTS");
               history[user.prtag].push(dat);
               db.ref("chatlog/" + user.prtag).push(dat);

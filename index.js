@@ -19,19 +19,7 @@ process.on("unhandledRejection", err => {
   console.error("UNHANDLED REJECTION:", err);
 });
 
-const http = require("http");
 
-http.createServer((req, res) => {
-    if (req.url === "/debugbin") {
-        const fs = require("fs");
-        const data = fs.readFileSync("server_sent.bin");
-        res.writeHead(200, {
-            "Content-Type": "application/octet-stream",
-            "Content-Disposition": "attachment; filename=server_sent.bin"
-        });
-        res.end(data);
-    }
-}).listen(10001);
 
 
 let last = Date.now();
@@ -66,10 +54,36 @@ async function initMega() {
     }
 }
 
+const http = require("http");
 const WebSocket = require("ws");
 
 const port = process.env.PORT || 10000;
-const server = new WebSocket.Server({ port });
+
+// Create ONE HTTP server
+http.createServer((req, res) => {
+    if (req.url === "/debugbin") {
+        const fs = require("fs");
+        try {
+            const data = fs.readFileSync("server_sent.bin");
+            res.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": "attachment; filename=server_sent.bin"
+            });
+            res.end(data);
+        } catch (err) {
+            res.writeHead(404);
+            res.end("No debug file found");
+        }
+        return;
+    }
+
+    res.writeHead(200);
+    res.end("Server is running");
+});
+
+// Attach WebSocket server to the SAME HTTP server
+const server = new WebSocket.Server({ server });
+
 
 let megaDB = null;
 let admin = null;

@@ -64,10 +64,10 @@ const httpServer = http.createServer((req, res) => {
     if (req.url === "/debugbin") {
         const fs = require("fs");
         try {
-            const data = fs.readFileSync("file_made.bin");
+            const data = fs.readFileSync("mega_yokiad.bin");
             res.writeHead(200, {
                 "Content-Type": "application/octet-stream",
-                "Content-Disposition": "attachment; filename=file_made.bin"
+                "Content-Disposition": "attachment; filename=mega_yokiad.bin"
             });
             res.end(data);
         } catch (err) {

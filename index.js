@@ -89,7 +89,7 @@ let megaDB = null;
 let admin = null;
 let db = null;
 
-server.on('listening', async () => {
+httpServer.on('listening', async () => {
   console.log("Server ready");
   admin = await getAdmin();
   console.log("Firebase Admin received");

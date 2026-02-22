@@ -89,7 +89,7 @@ let megaDB = null;
 let admin = null;
 let db = null;
 
-httpServer.listen(port, () => {
+httpServer.listen(port, async () => {
     console.log("HTTP + WebSocket server running on port", port);
 
     console.log("Server ready");

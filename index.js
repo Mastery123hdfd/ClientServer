@@ -290,7 +290,7 @@ async function createFolder(fold){
 }
 
 async function ensureFolder(fold) {
-  if(!megaDB(){
+  if(!megaDB()){
     console.log("Attempted to access ensureFolder("+fold+") before Mega startup!");
     return;
   }

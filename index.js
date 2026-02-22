@@ -511,7 +511,7 @@ server.on("connection", async (socket,req) => {
           let filebuff = msg;
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
-          try{
+          
           const val = await new Promise((resolve, reject) => {
             const up = filedb.upload(
             { name: meta.name, target: file, data: filebuff, size: meta.size }
@@ -522,9 +522,7 @@ server.on("connection", async (socket,req) => {
           });
           fs.writeFileSync("mega_yokiad.bin", filebuff);
           id = val.nodeId;
-          } catch(err){
-            console.log("Error uploading to MEGA: ", err);
-          }
+          
 
           
           // Distribute to users

@@ -91,25 +91,21 @@ let db = null;
 
 httpServer.listen(port, () => {
     console.log("HTTP + WebSocket server running on port", port);
-});
 
-
-server.on('listening', async () => {
-  console.log("Server ready");
-  admin = await getAdmin();
-  console.log("Firebase Admin received");
-  admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
-    databaseURL: process.env.FIREBASE_DB_URL
-  });
-  console.log("Firebase initialized!");
-  db = admin.database();
-  await loadFromFirebase(db);
-  await loadAccounts(db);
-  
-
-  megaDB = await initMega();
-  console.log("MEGA database loaded!");
+    console.log("Server ready");
+    admin = await getAdmin();
+    console.log("Firebase Admin received");
+    admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+      databaseURL: process.env.FIREBASE_DB_URL
+    });
+    console.log("Firebase initialized!");
+    db = admin.database();
+    await loadFromFirebase(db);
+    await loadAccounts(db);
+   
+    megaDB = await initMega();
+    console.log("MEGA database loaded!");
 });
 
 
@@ -294,6 +290,10 @@ async function createFolder(fold){
 }
 
 async function ensureFolder(fold) {
+  if(!megaDB(){
+    console.log("Attempted to access ensureFolder("+fold+") before Mega startup!");
+    return;
+  }
   const filedb = megaDB;
   // Check if folder already exists
   for (const file of Object.values(filedb.files)) {
@@ -512,16 +512,10 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
           
-          const val = await new Promise((resolve, reject) => {
-            const up = filedb.upload(
-            { name: meta.name, target: file, data: filebuff, size: meta.size }
-            );
-
-            up.on("complete", resolve);
-            up.on("error", reject);
-          });
+          const up = filedb.upload( { name: meta.name, target: file }, filebuff );
+          const val = await up.complete;
+          const id = val.nodeId;
           fs.writeFileSync("mega_yokiad.bin", filebuff);
-          id = val.nodeId;
           
 
           
@@ -688,7 +682,7 @@ server.on("connection", async (socket,req) => {
                 if (data.type === "regmeta" || data.type === "imgmeta") {
                   socket.send(JSON.stringify(data));
                   const filedb = megaDB;
-                  const file = await downloadFromMega(data.id, filedb);
+                  const file = await downloadFromMega(data.id);
                   socket.send(file, { binary: true });
                   continue;
                 }

@@ -498,7 +498,9 @@ server.on("connection", async (socket,req) => {
         console.log("Binary received: " + isBinary + " length: " + msg.length);
       }
         if (! await ensureRoom(user.prtag, user, socket)) return;
+      
         //==================== HANDLE ACTUAL DATA ==========================
+      
         if(isBinary){
           if(!meta){
             console.log("No metadata sent!");
@@ -512,12 +514,14 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
           
-          const up = filedb.upload( { name: meta.name, target: file }, filebuff );
-          const val = await up.complete;
-          id = val.nodeId;
-          fs.writeFileSync("mega_yokiad.bin", filebuff);
-          
+          const up = megaDB.upload({ name: meta.name, target: file });
+          up.end(filebuff);
+          const val = await new Promise((resolve, reject) => {
+             up.on("complete", resolve);
+             up.on("error", reject);
+          });
 
+          id = val.nodeId;
           
           // Distribute to users
           for (const [client, cUser] of clients) {

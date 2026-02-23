@@ -514,7 +514,7 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
           
-          const up = megaDB.upload({ name: meta.name, target: file });
+          const up = await megaDB.upload({ name: meta.name, target: file, size: meta.size });
           up.end(filebuff);
           const val = await new Promise((resolve, reject) => {
              up.on("complete", resolve);

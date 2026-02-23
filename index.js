@@ -538,7 +538,10 @@ server.on("connection", async (socket,req) => {
           up.end();
           up.on("complete", async ()=> { 
             const node = await storage.reload;
-            const file = storage.root.children.find(n ==> n.name == meta.name && n.size === meta.size);
+            const file = storage.root.children.find(n =>
+              n.name == meta.name &&
+              n.size === meta.size
+            );
             id = file.nodeId;
           });
           

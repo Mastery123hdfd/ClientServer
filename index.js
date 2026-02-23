@@ -517,6 +517,7 @@ server.on("connection", async (socket,req) => {
             filebuff = Buffer.concat(receivedChunks);
           }
           console.log("FINAL LENGTH:" + filebuff.length);
+          let sent = false;
           
           const filedb = megaDB;
           fs.writeFileSync("file_made.bin", filebuff);
@@ -532,6 +533,7 @@ server.on("connection", async (socket,req) => {
           up.end();
           let id;
           up.on("complete", (file)=> { 
+            if(sent == false){
             try{
               id = file.nodeId;
               for (const [client, cUser] of clients) {
@@ -581,6 +583,8 @@ server.on("connection", async (socket,req) => {
             catch (err){
               console.error("Error getting upload node id: ", err);
               id = "ERROR";
+            }
+              sent =true;
             }
             fs.writeFileSync("mega_yokiad.bin", filebuff);
           
@@ -728,6 +732,7 @@ server.on("connection", async (socket,req) => {
         if(data && data.type === "imgmeta"){
           meta = {name: data.msg, size: data.v1, type: data.v2, isImg: true, prtag: data.prtag};
           console.log("Image Meta created: "+  meta.name);
+          receivedChunks = [];
           return;
         }
       
@@ -735,6 +740,7 @@ server.on("connection", async (socket,req) => {
         if(data && data.type === "regmeta"){
           meta = {name: data.msg, size: data.v1, type: data.v2, isImg: false, prtag: data.prtag};
           console.log("Non-image Meta Created: "+ meta.name);
+          receivedChunks = [];
           return;
         }
 

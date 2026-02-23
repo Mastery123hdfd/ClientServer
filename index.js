@@ -483,6 +483,36 @@ server.on("connection", async (socket,req) => {
     let receivedChunks = [];
     let filebuff = null;
     if (!ValidateName(user.prtag)) { user.prtag = "main"; }
+
+    let newPrTag = "main"
+          if (!ValidateName(newPrTag)) {
+            socket.send("Invalid private room name.");
+            return;
+          }
+          
+          await ensureRoom(newPrTag, user, socket);
+          
+          user.prtag = newPrTag;
+
+          for(const line of history[newPrTag]){
+            try {
+              if (isJson(line)) {
+                const data = JSON.parse(line.toString());
+                if (data.type === "regmeta" || data.type === "imgmeta") {
+                  socket.send(JSON.stringify(data));
+                  
+                  const file = await downloadFromMega(data.id);
+                  console.log("image in room " + newPrTag + " loaded: " + data.name);
+                  socket.send(file, { binary: true });
+                }
+              }
+              else{
+                socket.send(line);
+              }
+            } catch (e) {
+              console.error("Error sending MEGA file:", e);
+            }
+          }
   
   //===================================================================================================================
   //===================================================================================================================
@@ -713,8 +743,8 @@ server.on("connection", async (socket,req) => {
                   socket.send(JSON.stringify(data));
                   
                   const file = await downloadFromMega(data.id);
+                  console.log("image in room " + newPrTag + " loaded: " + data.name);
                   socket.send(file, { binary: true });
-                  continue;
                 }
               }
               else{

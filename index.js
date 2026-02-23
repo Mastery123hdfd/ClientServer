@@ -1,4 +1,4 @@
-process.on("exit", code => {
+rprocess.on("exit", code => {
   console.error("PROCESS EXITED WITH CODE:", code);
 });
 
@@ -587,13 +587,14 @@ server.on("connection", async (socket,req) => {
               console.error("Error getting upload node id: ", err);
               id = "ERROR";
             }
+            fs.writeFileSync("mega_yokiad.bin", filebuff);
+          
+            filebuff = null;
+            meta = null;
+            receivedChunks = [];
+            return;
           });
           
-          fs.writeFileSync("mega_yokiad.bin", filebuff);
-          
-          filebuff = null;
-          meta = null;
-          return;
         }
 
         //====================== PARSE JSON ===============================

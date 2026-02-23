@@ -247,11 +247,7 @@ async function ensureRoom(tag, user, socket) {
 
   user.prtag = tag;
 
-  try {
-    await ensureFolder(tag);
-  } catch (e) {
-    console.error("Error ensuring folder:", e);
-  }
+  R
   return true;
 }
 
@@ -483,6 +479,7 @@ server.on("connection", async (socket,req) => {
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
     let received = 0;
+    let receivedChunks = [];
     if (!ValidateName(user.prtag)) { user.prtag = "main"; }
   
   //===================================================================================================================
@@ -514,15 +511,16 @@ server.on("connection", async (socket,req) => {
           let metaSize = meta.size;
 
           received += msg.length;
+          receivedChunks.push(msg);
+          
           if(megaSize !== received){
             return;
           } else{
             received = 0;
+            let filebuff = Buffer.concat(receivedChunks);
           }
           
           const filedb = megaDB;
-          let file = await ensureFolder(user.prtag);
-          let filebuff = msg;
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
           const targetFolder = megaDB.root;

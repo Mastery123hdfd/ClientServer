@@ -841,7 +841,6 @@ server.on("connection", async (socket,req) => {
             });
 
             if(newaccount == 0){
-              ensureAccount(userin, passin);
               acc = new Account(userin, passin, false, false, userin);
               user.username = userin;
               user.pass = passin;

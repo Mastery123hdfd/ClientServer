@@ -482,6 +482,7 @@ server.on("connection", async (socket,req) => {
     let meta = null;
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
+    let received = 0;
     if (!ValidateName(user.prtag)) { user.prtag = "main"; }
   
   //===================================================================================================================
@@ -500,7 +501,8 @@ server.on("connection", async (socket,req) => {
         if (! await ensureRoom(user.prtag, user, socket)) return;
       
         //==================== HANDLE ACTUAL DATA ==========================
-      
+        
+        
         if(isBinary){
           if(!meta){
             console.log("No metadata sent!");
@@ -508,6 +510,16 @@ server.on("connection", async (socket,req) => {
           }
           const fs = require("fs");
           console.log("Data received!!!");
+
+          let metaSize = meta.size;
+
+          received += msg.length;
+          if(megaSize !== received){
+            return;
+          } else{
+            received = 0;
+          }
+          
           const filedb = megaDB;
           let file = await ensureFolder(user.prtag);
           let filebuff = msg;

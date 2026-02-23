@@ -50,7 +50,7 @@ async function initMega() {
     }
 }
 
-async function changePrTag(tag){
+async function changePrTag(tag, user, socket){
   const newPrTag = tag;
           if (!ValidateName(newPrTag)) {
             socket.send("Invalid private room name.");
@@ -505,7 +505,7 @@ server.on("connection", async (socket,req) => {
       sessionToken: null
     });
     let meta = null;
-    changePrTag("main");
+    changePrTag("main", clients.get(socket), socket);
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
     let received = 0;

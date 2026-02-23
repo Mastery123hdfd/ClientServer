@@ -527,7 +527,7 @@ server.on("connection", async (socket,req) => {
           
           const up = targetFolder.upload({ 
             name: "myfile.png",
-            size: meta.size
+
           });  
           
           up.end(filebuff); 

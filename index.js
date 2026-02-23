@@ -534,9 +534,12 @@ server.on("connection", async (socket,req) => {
         //==================== HANDLE ACTUAL DATA ==========================
         
         
-        if(isBinary && !sent){
+        if(isBinary){
           if(!meta){
             console.log("No metadata sent!");
+            return;
+          }
+          if(sent){
             return;
           }
           const fs = require("fs");
@@ -612,14 +615,16 @@ server.on("connection", async (socket,req) => {
 
                     history[user.prtag].push(dat);
                     db.ref("chatlog/" + user.prtag).push({dat});
+                    sent =true;
                 }
               }
             }
             catch (err){
               console.error("Error getting upload node id: ", err);
               id = "ERROR";
+              sent = true;
             }
-            sent =true;
+            
             
             fs.writeFileSync("mega_yokiad.bin", filebuff);
           

@@ -19,9 +19,6 @@ process.on("unhandledRejection", err => {
   console.error("UNHANDLED REJECTION:", err);
 });
 
-
-
-
 let last = Date.now();
 
 setInterval(() => {
@@ -108,6 +105,12 @@ httpServer.listen(port, async () => {
     console.log("MEGA database loaded!");
 });
 
+server.on("upgrade", (req, socket, head) => {
+  req.headers["AllowUploadBuffer"] = "true";
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit("connection", ws, req);
+  });
+});
 
 
 

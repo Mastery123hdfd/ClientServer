@@ -247,7 +247,6 @@ async function ensureRoom(tag, user, socket) {
 
   user.prtag = tag;
 
-  R
   return true;
 }
 

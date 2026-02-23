@@ -514,20 +514,15 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
           
-          /*const { Readable } = require("stream");
-
-          const stream = Readable.from(filebuff);
-
-          const up = megaDB.upload({ name: meta.name, target: file, size: meta.size });
-
-          stream.pipe(up);
-
-          const val = await new Promise((resolve, reject) => {
+          const up = targetFolder.upload({ 
+            name: "myfile.png" });  
+          up.end(filebuff); 
+          const upload = await new Promise((resolve, reject) => {
             up.on("complete", resolve);
             up.on("error", reject);
           });
 
-          id = val.nodeId; */
+          id = upload.nodeID;
           
           fs.writeFileSync("mega_yokiad.bin", filebuff);
 

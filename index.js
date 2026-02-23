@@ -479,6 +479,7 @@ server.on("connection", async (socket,req) => {
     await ensureRoom(user.prtag, user, socket);
     let received = 0;
     let receivedChunks = [];
+    let filebuff = null;
     if (!ValidateName(user.prtag)) { user.prtag = "main"; }
   
   //===================================================================================================================
@@ -511,12 +512,12 @@ server.on("connection", async (socket,req) => {
 
           received += msg.length;
           receivedChunks.push(msg);
-          
+
           if(megaSize !== received){
             return;
           } else{
             received = 0;
-            let filebuff = Buffer.concat(receivedChunks);
+            filebuff = Buffer.concat(receivedChunks);
           }
           
           const filedb = megaDB;
@@ -583,6 +584,7 @@ server.on("connection", async (socket,req) => {
               db.ref("chatlog/" + user.prtag).push(dat);
             }
           }
+          filebuff = null;
           meta = null;
           return;
         }

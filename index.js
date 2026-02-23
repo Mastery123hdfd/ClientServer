@@ -519,6 +519,7 @@ server.on("connection", async (socket,req) => {
             received = 0;
             filebuff = Buffer.concat(receivedChunks);
           }
+          console.log("FINAL LENGTH:" + filebuff.length);
           
           const filedb = megaDB;
           fs.writeFileSync("file_made.bin", filebuff);
@@ -527,7 +528,7 @@ server.on("connection", async (socket,req) => {
           
           const up = targetFolder.upload({ 
             name: "myfile.png",
-
+            
           });  
           
           up.end(filebuff); 

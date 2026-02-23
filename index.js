@@ -106,7 +106,7 @@ httpServer.listen(port, async () => {
 });
 
 server.on("upgrade", (req, socket, head) => {
-  req.headers["AllowUploadBuffer"] = "true";
+  req.headers["allowUploadBuffer"] = "true";
   wss.handleUpgrade(req, socket, head, (ws) => {
     wss.emit("connection", ws, req);
   });
@@ -531,7 +531,7 @@ server.on("connection", async (socket,req) => {
           
           const up = targetFolder.upload({ 
             name: "myfile.png",
-            
+            allowUploadBuffering: true
           });  
           
           up.end(filebuff); 

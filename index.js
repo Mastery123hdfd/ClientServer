@@ -1164,9 +1164,9 @@ server.on("connection", async (socket,req) => {
                     cUser.mod = true;
 
                     client.send("You have been given admin privileges by " + user.moniker);
-                    socket.send("Admin privileges given to " + user.awaitingAdminTarget);
-                    updateSession(convertUsertoAccount(cUser),db, cUser.sessionToken);
-                    updateLoginPermData(convertUsertoAccount(cUser), db);
+                    socket.send("Admin privileges given to " + cUser.moniker);
+                    let afromUser = convertUsertoAccount(user);
+                    updateSession(afromUser, db, user.sessionToken);
 
                     user.awaitingAdminTarget = false;
                 }
@@ -1184,9 +1184,9 @@ server.on("connection", async (socket,req) => {
                     cUser.mod = true;
 
                     client.send("You have been given mod privileges by " + user.moniker);
-                    socket.send("Mod privileges given to " + user.awaitingModTarget);
-                    updateLoginPermData(convertUsertoAccount(cUser), db);
-                    updateSession(convertUsertoAccount(cUser), db, cUser.sessionToken);
+                    socket.send("Mod privileges given to " + cUser.moniker);
+                    let afromUser = convertUsertoAccount(user);
+                    updateSession(afromUser, db, user.sessionToken);
                     user.awaitingModTarget = false;
                 }
             });

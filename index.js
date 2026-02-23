@@ -507,7 +507,7 @@ server.on("connection", async (socket,req) => {
           const fs = require("fs");
           console.log("Data received!!!");
 
-          let metaSize = meta.size;
+          let megaSize = meta.size;
 
           received += msg.length;
           receivedChunks.push(msg);

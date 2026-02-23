@@ -514,11 +514,17 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
           
-          const up = await megaDB.upload({ name: meta.name, target: file, size: meta.size });
-          up.end(filebuff);
+          const { Readable } = require("stream");
+
+          const stream = Readable.from(filebuff);
+
+          const up = megaDB.upload({ name: meta.name, target: file });
+
+          stream.pipe(up);
+
           const val = await new Promise((resolve, reject) => {
-             up.on("complete", resolve);
-             up.on("error", reject);
+            up.on("complete", resolve);
+            up.on("error", reject);
           });
 
           id = val.nodeId;

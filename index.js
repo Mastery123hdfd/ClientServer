@@ -516,7 +516,7 @@ server.on("connection", async (socket,req) => {
           const targetFolder = megaDB.root;
           
           const up = targetFolder.upload({ 
-            name: "myfile.png"
+            name: "myfile.png",
             size: meta.size
           });  
           

@@ -539,9 +539,7 @@ server.on("connection", async (socket,req) => {
             console.log("No metadata sent!");
             return;
           }
-          if(sent){
-            return;
-          }
+          
           const fs = require("fs");
           console.log("Data received!!!");
 
@@ -572,6 +570,9 @@ server.on("connection", async (socket,req) => {
           up.end();
           let id;
           up.on("complete", (file)=> { 
+            if(sent){
+              return;
+            }
             try{
               id = file.nodeId;
               for (const [client, cUser] of clients) {
@@ -918,7 +919,7 @@ server.on("connection", async (socket,req) => {
 
         if (text == "/strikemsg") {
           console.log("Striked 1");
-          history[user.prtag].pop();
+          const removed = history[user.prtag].pop();
           let taggedMessage = JSON.stringify({ type: "strikemsg" });
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
@@ -931,6 +932,12 @@ server.on("connection", async (socket,req) => {
               .once("value", snapshot => {
                   snapshot.forEach(child => child.ref.remove());
               });
+          const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
+          if(!file){
+            console.log("Invalid node id");
+            return;
+          }
+          await file.delete(permament);
           console.log("Message removed from memory.");
           socket.send("Message Removed.");
           return;
@@ -944,7 +951,7 @@ server.on("connection", async (socket,req) => {
 
         // ===================== HANDLE BAN TARGET ==========================
 
-        if (user.awaitingBanTarget) {
+        if (user.awaitingBanTarget == true) {
           clients.forEach((cUser, client) => {
             if (cUser.moniker === text) {
               if (client._socket && client._socket.remoteAddress) {
@@ -972,11 +979,13 @@ server.on("connection", async (socket,req) => {
         
         // ===================== HANDLE UNBAN TARGET ==========================
 
-        if(user.awaitingUnbanTarget){
+        if(user.awaitingUnbanTarget == true){
           if(bannedIPs.has(text)){
             bannedIPs.delete(text);
             socket.send("User " + text + " has been unbanned.");
           }
+          
+          user.awaitingUnbanTarget = false;
           return;
         }
 
@@ -1011,7 +1020,23 @@ server.on("connection", async (socket,req) => {
         // ===================== CLEAR HISTORY =====================
 
         if (text == "/clearhist" && user.admin) {
-
+          for(const line of history[user.prtag]){
+            try{
+              if(isJson(line)){
+                const data = JSON.parse(line.toString());
+                if(data.type === "regmeta" || data.type === "imgmeta"){
+                  const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
+                    if(!file){
+                      console.log("Invalid node id");
+                      continue;
+                    }
+                  await file.delete(permament);
+                }
+              }
+            }catch(err){
+              console.error("Error during history clear:", err);
+            }
+          }
           history[user.prtag] = [];
           let taggedMessage = JSON.stringify({ type: "clearHistory" });
           for (const [client, cUser] of clients) {
@@ -1130,7 +1155,7 @@ server.on("connection", async (socket,req) => {
 
           // ===================== HANDLE ADMIN TARGET =====================
   
-          if (user.awaitingAdminTarget) {
+          if (user.awaitingAdminTarget == true) {
 
             clients.forEach((cUser, client) => {
 
@@ -1142,7 +1167,7 @@ server.on("connection", async (socket,req) => {
                     client.send("You have been given admin privileges by " + user.moniker);
                     socket.send("Admin privileges given to " + user.awaitingAdminTarget);
                     updateSession(convertUsertoAccount(cUser),db, cUser.sessionToken);
-                    updateLoginPermData(cUser, db);
+                    updateLoginPermData(convertUsertoAccount(cUser), db);
 
                     user.awaitingAdminTarget = false;
                 }
@@ -1151,7 +1176,7 @@ server.on("connection", async (socket,req) => {
 
           // ===================== HANDLE MOD TARGET =====================
 
-          if (user.awaitingModTarget) {
+          if (user.awaitingModTarget == true) {
 
             clients.forEach((cUser, client) => {
 
@@ -1161,7 +1186,7 @@ server.on("connection", async (socket,req) => {
 
                     client.send("You have been given mod privileges by " + user.moniker);
                     socket.send("Mod privileges given to " + user.awaitingModTarget);
-                    updateLoginPermData(cUser, db);
+                    updateLoginPermData(convertUsertoAccount(cUser), db);
                     updateSession(convertUsertoAccount(cUser), db, cUser.sessionToken);
                     user.awaitingModTarget = false;
                 }
@@ -1221,7 +1246,7 @@ server.on("connection", async (socket,req) => {
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
         if(isJson(removed)){
-          const file = megaDB.files[removed.id];
+          const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
           if(!file){
             console.log("Invalid node id");
             return;

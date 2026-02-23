@@ -745,6 +745,8 @@ server.on("connection", async (socket,req) => {
                   const file = await downloadFromMega(data.id);
                   console.log("image in room " + newPrTag + " loaded: " + data.name);
                   socket.send(file, { binary: true });
+                } else {
+                  socket.send(line);
                 }
               }
               else{

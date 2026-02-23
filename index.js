@@ -539,12 +539,12 @@ server.on("connection", async (socket,req) => {
           let id;
           up.on("complete", async ()=> { 
             try{
-            const node = await storage.reload;
+            const node = await storage.reload();
             const file = storage.root.children.find(n => n.name == meta.name && n.size === meta.size);
             let id = file.nodeId;
             }
             catch (err){
-              console.log("Error getting upload node id. ");
+              console.error("Error getting upload node id: ", err);
               let id = "";
             }
           });

@@ -518,7 +518,7 @@ server.on("connection", async (socket,req) => {
 
           const stream = Readable.from(filebuff);
 
-          const up = megaDB.upload({ name: meta.name, target: file });
+          const up = megaDB.upload({ name: meta.name, target: file, size: meta.size });
 
           stream.pipe(up);
 

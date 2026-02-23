@@ -536,8 +536,10 @@ server.on("connection", async (socket,req) => {
             up.write(chunk); 
           } // Finalize the stream 
           up.end();
-          up.on("complete", (file) => { 
-            id = file.nodeId
+          up.on("complete", async ()=> { 
+            const node = await storage.reload;
+            const file = storage.root.children.find(n ==> n.name == meta.name && n.size === meta.size);
+            id = file.nodeId;
           });
           
           fs.writeFileSync("mega_yokiad.bin", filebuff);

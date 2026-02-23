@@ -303,7 +303,7 @@ async function ensureFolder(fold) {
 
 async function downloadFromMega(nodeId) {
   const filedb = megaDB;
-  const file = filedb.files[nodeId];
+  const file = megaDB.root.children.find(n => n.nodeId === nodeId);
   if (!file) throw new Error("File not found");
 
   return await new Promise((resolve, reject) => {

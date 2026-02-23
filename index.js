@@ -307,7 +307,7 @@ async function downloadFromMega(nodeId) {
   const file = filedb.files[nodeId];
   if (!file) throw new Error("File not found");
 
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     const chunks = [];
     file.download()
       .on("data", c => chunks.push(c))
@@ -706,7 +706,7 @@ server.on("connection", async (socket,req) => {
                 const data = JSON.parse(line.toString());
                 if (data.type === "regmeta" || data.type === "imgmeta") {
                   socket.send(JSON.stringify(data));
-                  const filedb = megaDB;
+                  
                   const file = await downloadFromMega(data.id);
                   socket.send(file, { binary: true });
                   continue;

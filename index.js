@@ -536,13 +536,17 @@ server.on("connection", async (socket,req) => {
             up.write(chunk); 
           } // Finalize the stream 
           up.end();
+          let id;
           up.on("complete", async ()=> { 
+            try{
             const node = await storage.reload;
-            const file = storage.root.children.find(n =>
-              n.name == meta.name &&
-              n.size === meta.size
-            );
-            id = file.nodeId;
+            const file = storage.root.children.find(n => n.name == meta.name && n.size === meta.size);
+            let id = file.nodeId;
+            }
+            catch (err){
+              console.log("Error getting upload node id. ");
+              let id = "";
+            }
           });
           
           fs.writeFileSync("mega_yokiad.bin", filebuff);

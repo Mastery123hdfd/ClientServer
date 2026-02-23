@@ -537,11 +537,9 @@ server.on("connection", async (socket,req) => {
           } // Finalize the stream 
           up.end();
           let id;
-          up.on("complete", async ()=> { 
+          up.on("complete", (file)=> { 
             try{
-            const node = await megaDB.reload();
-            const file = megaDB.root.children.find(n => n.name == meta.name && n.size === meta.size);
-            let id = file.nodeId;
+              id = file.nodeId;
             }
             catch (err){
               console.error("Error getting upload node id: ", err);
@@ -866,7 +864,7 @@ server.on("connection", async (socket,req) => {
       // ============================================================
       // ======================= COMMAND MODE =======================
       // ============================================================
-      if(text == "/cmd"){
+      if(text == "/cmd" && user.mod == true){
         socket.send("Command Mode Activated. Do /cmdoff to disable.");
         command = true;
         return;

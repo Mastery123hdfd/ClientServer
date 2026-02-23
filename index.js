@@ -584,7 +584,7 @@ server.on("connection", async (socket,req) => {
                 console.log("Wrote raw binary to server_sent.bin");
 
                 history[user.prtag].push(dat);
-              db.ref("chatlog/" + user.prtag).push(dat);
+              db.ref("chatlog/" + user.prtag).push({dat});
             }
           }
           filebuff = null;

@@ -513,6 +513,7 @@ server.on("connection", async (socket,req) => {
           let filebuff = msg;
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
+          const targetFolder = megaDB.root;
           
           const up = targetFolder.upload({ 
             name: "myfile.png" });  

@@ -514,7 +514,7 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           let id = "";
           
-          const { Readable } = require("stream");
+          /*const { Readable } = require("stream");
 
           const stream = Readable.from(filebuff);
 
@@ -527,7 +527,7 @@ server.on("connection", async (socket,req) => {
             up.on("error", reject);
           });
 
-          id = val.nodeId;
+          id = val.nodeId; */
           
           fs.writeFileSync("mega_yokiad.bin", filebuff);
 

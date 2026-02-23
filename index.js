@@ -539,8 +539,8 @@ server.on("connection", async (socket,req) => {
           let id;
           up.on("complete", async ()=> { 
             try{
-            const node = await storage.reload();
-            const file = storage.root.children.find(n => n.name == meta.name && n.size === meta.size);
+            const node = await megaDB.reload();
+            const file = megaDB.root.children.find(n => n.name == meta.name && n.size === meta.size);
             let id = file.nodeId;
             }
             catch (err){

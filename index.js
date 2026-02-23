@@ -523,6 +523,8 @@ server.on("connection", async (socket,req) => {
 
           id = val.nodeId;
           
+          fs.writeFileSync("mega_yokiad.bin", filebuff);
+
           // Distribute to users
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {

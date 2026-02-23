@@ -37,9 +37,8 @@ async function initMega() {
   const { Storage } = require('megajs');
     try {
         let megaDB = await new Storage({
-            email: process.env.MEGA_EMAIL,
-            password: process.env.MEGA_PASSWORD
-        }).ready;
+            email: process.env.MEGA_EMAIL, password: process.env.MEGA_PASSWORD
+        });
         megaDB.on('ready', () => {
           console.log("MEGA filesystem loaded.");
         });

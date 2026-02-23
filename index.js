@@ -539,59 +539,58 @@ server.on("connection", async (socket,req) => {
           up.on("complete", (file)=> { 
             try{
               id = file.nodeId;
+              for (const [client, cUser] of clients) {
+                if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+                  let dat;
+                    if(meta.isImg){
+
+                      dat = (JSON.stringify({
+                        type: "imgmeta",
+                        name: meta.name,
+                        size: meta.size,
+                        mimetype: meta.type,
+                        id: id
+                      }));
+                  //Compression removed for now, w/test/as causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
+                      
+                      fs.writeFileSync("upload.bin", filebuff);
+
+                      client.send(dat);
+                      client.send(filebuff, { binary: true });
+                    } else { // generate otherwise md
+                      dat = (JSON.stringify({
+                        type: "regmeta",
+                        name: meta.name,
+                        size: meta.size,
+                        mimetype: meta.type,
+                        id: id
+                      }));
+
+                      fs.writeFileSync("upload.bin", filebuff);
+
+                      client.send(dat);
+                      client.send(filebuff, { binary: true });
+
+                    }
+                    console.log("SENT META TO CLIENTS: " + dat);
+                    console.log("SENT FILES TO CLIENTS");
+                
+                    fs.writeFileSync("server_sent.bin", filebuff);
+                    console.log("Wrote raw binary to server_sent.bin");
+
+                    history[user.prtag].push(dat);
+                    db.ref("chatlog/" + user.prtag).push({dat});
+                }
+              }
             }
             catch (err){
               console.error("Error getting upload node id: ", err);
-              let id = "";
+              id = "ERROR";
             }
           });
           
           fs.writeFileSync("mega_yokiad.bin", filebuff);
-
-          // Distribute to users
-          for (const [client, cUser] of clients) {
-            if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
-              let dat;
-                if(meta.isImg){
-
-                  dat = (JSON.stringify({
-                    type: "imgmeta",
-                    name: meta.name,
-                    size: meta.size,
-                    mimetype: meta.type,
-                    id: id
-                  }));
-                  //Compression removed for now, w/test/as causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
-                  
-                  fs.writeFileSync("upload.bin", filebuff);
-
-                  client.send(dat);
-                  client.send(filebuff, { binary: true });
-                } else { // generate otherwise md
-                  dat = (JSON.stringify({
-                    type: "regmeta",
-                    name: meta.name,
-                    size: meta.size,
-                    mimetype: meta.type,
-                    id: id
-                  }));
-
-                  fs.writeFileSync("upload.bin", filebuff);
-
-                  client.send(dat);
-                  client.send(filebuff, { binary: true });
-
-                }
-                console.log("SENT META TO CLIENTS: " + dat);
-                console.log("SENT FILES TO CLIENTS");
-                
-                fs.writeFileSync("server_sent.bin", filebuff);
-                console.log("Wrote raw binary to server_sent.bin");
-
-                history[user.prtag].push(dat);
-              db.ref("chatlog/" + user.prtag).push({dat});
-            }
-          }
+          
           filebuff = null;
           meta = null;
           return;

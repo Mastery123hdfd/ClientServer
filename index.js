@@ -50,6 +50,41 @@ async function initMega() {
     }
 }
 
+async function changePrTag(tag){
+  const newPrTag = tag;
+          if (!ValidateName(newPrTag)) {
+            socket.send("Invalid private room name.");
+            return;
+          }
+          
+          await ensureRoom(newPrTag, user, socket);
+          
+          user.prtag = newPrTag;
+
+          for(const line of history[newPrTag]){
+            try {
+              if (isJson(line)) {
+                const data = JSON.parse(line.toString());
+                if (data.type === "regmeta" || data.type === "imgmeta") {
+                  socket.send(JSON.stringify(data));
+                  
+                  const file = await downloadFromMega(data.id);
+                  console.log("image in room " + newPrTag + " loaded: " + data.name);
+                  socket.send(file, { binary: true });
+                } else {
+                  socket.send(line);
+                }
+              }
+              else{
+                socket.send(line);
+              }
+            } catch (e) {
+              console.error("Error sending MEGA file:", e);
+            }
+          }
+          return;
+}
+
 const http = require("http");
 const WebSocket = require("ws");
 
@@ -470,6 +505,7 @@ server.on("connection", async (socket,req) => {
       sessionToken: null
     });
     let meta = null;
+    changePrTag("main");
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
     let received = 0;
@@ -492,12 +528,13 @@ server.on("connection", async (socket,req) => {
       } else if (isBinary){
         console.log("Binary received: " + isBinary + " length: " + msg.length);
       }
+      let sent = false;
         if (! await ensureRoom(user.prtag, user, socket)) return;
       
         //==================== HANDLE ACTUAL DATA ==========================
         
         
-        if(isBinary){
+        if(isBinary && !sent){
           if(!meta){
             console.log("No metadata sent!");
             return;
@@ -517,7 +554,6 @@ server.on("connection", async (socket,req) => {
             filebuff = Buffer.concat(receivedChunks);
           }
           console.log("FINAL LENGTH:" + filebuff.length);
-          let sent = false;
           
           const filedb = megaDB;
           fs.writeFileSync("file_made.bin", filebuff);
@@ -533,7 +569,6 @@ server.on("connection", async (socket,req) => {
           up.end();
           let id;
           up.on("complete", (file)=> { 
-            if(sent == false){
             try{
               id = file.nodeId;
               for (const [client, cUser] of clients) {
@@ -584,8 +619,8 @@ server.on("connection", async (socket,req) => {
               console.error("Error getting upload node id: ", err);
               id = "ERROR";
             }
-              sent =true;
-            }
+            sent =true;
+            
             fs.writeFileSync("mega_yokiad.bin", filebuff);
           
             filebuff = null;

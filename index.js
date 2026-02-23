@@ -526,7 +526,6 @@ server.on("connection", async (socket,req) => {
           
           const filedb = megaDB;
           fs.writeFileSync("file_made.bin", filebuff);
-          let id = "";
           const targetFolder = megaDB.root;
           
           const up = targetFolder.upload({
@@ -538,7 +537,7 @@ server.on("connection", async (socket,req) => {
           } // Finalize the stream 
           up.end();
           up.on("complete", (file) => { 
-            id = file.nodeId 
+            id = file.nodeId;
           });
           
           fs.writeFileSync("mega_yokiad.bin", filebuff);

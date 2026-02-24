@@ -171,7 +171,7 @@ function ValidateName(name) {
 
 let restrictedRooms = [];
 
-async function loadFromFirebase(db){
+function loadFromFirebase(db){
   try{
     db.ref("chatlog").once("value", snapshot => {
      snapshot.forEach(roomSnap => {
@@ -506,7 +506,7 @@ server.on("connection", async (socket,req) => {
       sessionToken: null
     });
     let meta = null;
-    changePrTag("main", clients.get(socket), socket);
+    await changePrTag("main", clients.get(socket), socket);
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
     let received = 0;

@@ -665,6 +665,10 @@ server.on("connection", async (socket,req) => {
         let data = null;
         let raw = null;
         let text = "";
+        if (!isBinary && Buffer.isBuffer(msg)) {
+          console.log("Ignoring stray binary buffer in text path"); 
+          return;
+        }
         if(!isBinary){
           raw = msg.toString();
           if (raw.startsWith("{")) {

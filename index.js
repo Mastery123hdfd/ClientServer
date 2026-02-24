@@ -528,13 +528,14 @@ server.on("connection", async (socket,req) => {
       } else if (isBinary){
         console.log("Binary received: " + isBinary + " length: " + msg.length);
       }
-      let sent = false;
+      
         if (! await ensureRoom(user.prtag, user, socket)) return;
       
         //==================== HANDLE ACTUAL DATA ==========================
         
         
         if(isBinary){
+          let sent = false;
           if(!meta){
             console.log("No metadata sent!");
             return;

@@ -535,7 +535,6 @@ server.on("connection", async (socket,req) => {
         
         
         if(isBinary){
-          let sent = false;
           if(!meta){
             console.log("No metadata sent!");
             return;
@@ -570,10 +569,7 @@ server.on("connection", async (socket,req) => {
           } // Finalize the stream 
           up.end();
           let id;
-          up.on("complete", (file)=> { 
-            if(sent){
-              return;
-            }
+          up.on("complete", (file)=> {
             try{
               id = file.nodeId;
               for (const [client, cUser] of clients) {
@@ -594,7 +590,7 @@ server.on("connection", async (socket,req) => {
 
                       client.send(dat);
                       client.send(filebuff, { binary: true });
-                    } else { // generate otherwise md
+                    } else { 
                       dat = (JSON.stringify({
                         type: "regmeta",
                         name: meta.name,
@@ -620,6 +616,7 @@ server.on("connection", async (socket,req) => {
                       db.ref("chatlog/" + user.prtag).push({dat});
                       sent =true;
                     }
+                  continue;
                 }
               }
             }
@@ -635,9 +632,9 @@ server.on("connection", async (socket,req) => {
             filebuff = null;
             meta = null;
             receivedChunks = [];
-            return;
+            
           });
-          
+          return;
         }
 
         //====================== PARSE JSON ===============================

@@ -511,7 +511,7 @@ server.on("connection", async (socket,req) => {
     let received = 0;
     let receivedChunks = [];
     let filebuff = null;
-
+    let sent;
     
           
   
@@ -616,8 +616,10 @@ server.on("connection", async (socket,req) => {
                     console.log("Wrote raw binary to server_sent.bin");
 
                     history[user.prtag].push(dat);
-                    db.ref("chatlog/" + user.prtag).push({dat});
-                    sent =true;
+                    if(!sent){
+                      db.ref("chatlog/" + user.prtag).push({dat});
+                      sent =true;
+                    }
                 }
               }
             }
@@ -775,6 +777,7 @@ server.on("connection", async (socket,req) => {
           meta = {name: data.msg, size: data.v1, type: data.v2, isImg: true, prtag: data.prtag};
           console.log("Image Meta created: "+  meta.name);
           receivedChunks = [];
+          sent = false;
           return;
         }
       
@@ -783,6 +786,7 @@ server.on("connection", async (socket,req) => {
           meta = {name: data.msg, size: data.v1, type: data.v2, isImg: false, prtag: data.prtag};
           console.log("Non-image Meta Created: "+ meta.name);
           receivedChunks = [];
+          sent = false;
           return;
         }
 

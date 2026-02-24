@@ -867,8 +867,8 @@ server.on("connection", async (socket,req) => {
             user.username = acc.user;
             user.pass = acc.pass;
             user.moniker = acc.disp || acc.user;
-            user.admin = !!acc.admin;
-            user.mod = !!acc.mod;
+            user.admin = acc.admin;
+            user.mod = acc.mod;
             user.loggedIn = true;
 
             socket.send("Login successful");
@@ -1167,7 +1167,22 @@ server.on("connection", async (socket,req) => {
                     socket.send("Admin privileges given to " + cUser.moniker);
                     let afromUser = convertUsertoAccount(cUser);
                     updateSession(afromUser, db, cUser.sessionToken);
-
+                    db.ref("logindata/accountdata").once("value", snapshot => {
+                      snapshot.forEach(child=>{
+                        const val = child.val();
+                        if(val.user === cUser.username && val.pass === cUser.pass){
+                          child.ref.update({
+                            admin: true,
+                            mod: true
+                          })
+                        }
+                      });
+                    });
+                    db.ref("sessions/"+cUser.sessionToken).update({
+                      admin: true,
+                      mod: true
+                    });
+                      
                     user.awaitingAdminTarget = false;
                 }
             });
@@ -1187,6 +1202,19 @@ server.on("connection", async (socket,req) => {
                     socket.send("Mod privileges given to " + cUser.moniker);
                     let afromUser = convertUsertoAccount(cUser);
                     updateSession(afromUser, db, cUser.sessionToken);
+                    db.ref("logindata/accountdata").once("value", snapshot => {
+                      snapshot.forEach(child=>{
+                        const val = child.val();
+                        if(val.user === cUser.username && val.pass === cUser.pass){
+                          child.ref.update({
+                            mod: true
+                          })
+                        }
+                      });
+                    });
+                    db.ref("sessions/"+cUser.sessionToken).update({
+                      mod: true
+                    });
                     user.awaitingModTarget = false;
                 }
             });

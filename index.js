@@ -512,7 +512,7 @@ server.on("connection", async (socket,req) => {
     let received = 0;
     let receivedChunks = [];
     let filebuff = null;
-    let sent = false;
+    let sent;
     
           
   
@@ -585,7 +585,8 @@ server.on("connection", async (socket,req) => {
             try{
               id = file.nodeId;
               sent = true;
-              console.log("flag 'sent' marked true");
+              console.log("Current 'sent' status: " + sent);
+              
               for (const [client, cUser] of clients) {
                 if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
                   let dat;
@@ -619,7 +620,7 @@ server.on("connection", async (socket,req) => {
                       client.send(filebuff, { binary: true });
 
                     }
-                  if(sent == false){
+               
                     console.log("SENT META TO CLIENTS: " + dat);
                     console.log("SENT FILES TO CLIENTS");
                 
@@ -627,12 +628,14 @@ server.on("connection", async (socket,req) => {
                     console.log("Wrote raw binary to server_sent.bin");
 
                     history[user.prtag].push(dat);
-                    if(!sent){
+                    
                       db.ref("chatlog/" + user.prtag).push({dat});
                       sent =true;
-                    }
-                    continue;
-                  }
+                      console.log("sent is now true");
+                    
+                    
+                  sent = true; 
+                  console.log("sent is now true");
                 }
               }
             }

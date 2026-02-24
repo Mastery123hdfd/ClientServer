@@ -675,9 +675,9 @@ server.on("connection", async (socket,req) => {
                 console.log("Invalid JSON from client:", raw);
             }
           }
-          text = data?.msg || raw;
+          text = data.msg;
         }
-      if(text === "[object ArrayBuffer]") return;
+      if(text == "[object ArrayBuffer]") return;
 
         if(text == "") return;
 

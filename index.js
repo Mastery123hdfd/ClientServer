@@ -513,6 +513,7 @@ server.on("connection", async (socket,req) => {
     let receivedChunks = [];
     let filebuff = null;
     let sent;
+    let filesent = false;
     
           
   
@@ -616,10 +617,12 @@ server.on("connection", async (socket,req) => {
 
                       fs.writeFileSync("upload.bin", filebuff);
                       
+                      
                       client.send(dat);
                       client.send(filebuff, { binary: true });
 
                     }
+                    if(!filesent){
                
                     console.log("SENT META TO CLIENTS: " + dat);
                     console.log("SENT FILES TO CLIENTS");
@@ -630,9 +633,9 @@ server.on("connection", async (socket,req) => {
                     history[user.prtag].push(dat);
                     
                       db.ref("chatlog/" + user.prtag).push({dat});
-                      sent =true;
-                      console.log("sent is now true");
-                    
+                      filesent =true;
+                      console.log("filesent is now true");
+                    }
                     
                   sent = true; 
                   console.log("sent is now true");
@@ -795,6 +798,7 @@ server.on("connection", async (socket,req) => {
           console.log("Image Meta created: "+  meta.name);
           receivedChunks = [];
           sent = false;
+          filesent = false;
           return;
         }
       
@@ -804,6 +808,7 @@ server.on("connection", async (socket,req) => {
           console.log("Non-image Meta Created: "+ meta.name);
           receivedChunks = [];
           sent = false;
+          filesent = false;
           return;
         }
 

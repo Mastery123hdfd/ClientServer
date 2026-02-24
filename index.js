@@ -164,7 +164,7 @@ function ValidateName(name) {
     // Only allow alphanumeric, underscores, and hyphens
     // Prevents path traversal attempts like "../" or "..\\"
     if(name == "UNKNOWN") return false;
-    return /^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 50;
+    return /^[a-zA-Z0-9_- -#-.-|]+$/.test(name) && name.length > 0 && name.length <= 50;
 }
 
 
@@ -562,6 +562,7 @@ server.on("connection", async (socket,req) => {
           
           const filedb = megaDB;
           fs.writeFileSync("file_made.bin", filebuff);
+          console.log("Written to file_made.bin");
           const targetFolder = megaDB.root;
           
           const up = targetFolder.upload({
@@ -574,8 +575,12 @@ server.on("connection", async (socket,req) => {
           up.end();
           let id;
           up.on("complete", (file)=> {
+            if(sent) return;
+            console.log("Upload Complete");
             try{
               id = file.nodeId;
+              sent = true;
+              console.log("flag 'sent' marked true");
               for (const [client, cUser] of clients) {
                 if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
                   let dat;
@@ -588,7 +593,7 @@ server.on("connection", async (socket,req) => {
                         mimetype: meta.type,
                         id: id
                       }));
-                  //Compression removed for now, w/test/as causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
+                  //Compression removed for now, w/test/as causiHAO HAOHAOng some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
                       
                       fs.writeFileSync("upload.bin", filebuff);
 
@@ -632,6 +637,7 @@ server.on("connection", async (socket,req) => {
             
             
             fs.writeFileSync("mega_yokiad.bin", filebuff);
+            console.log("Written to mega_yokiad.bin");
           
             filebuff = null;
             meta = null;

@@ -164,7 +164,7 @@ function ValidateName(name) {
     // Only allow alphanumeric, underscores, and hyphens
     // Prevents path traversal attempts like "../" or "..\\"
     if(name == "UNKNOWN") return false;
-    return /^[A-Za-z0-9#{|}(). ]+$/.test(name) && name.length > 0 && name.length <= 50;
+    rreturn /^[^/]+$/.test(name) && name.length > 0 && name.length <= 50;
 
 }
 

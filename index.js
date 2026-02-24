@@ -578,7 +578,7 @@ server.on("connection", async (socket,req) => {
           up.on("complete", (file)=> {
             if(sent == true){
               console.log("FILE ALREADY SENT");
-              break;
+              return;
             }
             console.log("Current 'sent' status: " + sent);
             console.log("Upload Complete");

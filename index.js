@@ -1026,7 +1026,7 @@ server.on("connection", async (socket,req) => {
               if(isJson(line)){
                 const data = JSON.parse(line.toString());
                 if(data.type === "regmeta" || data.type === "imgmeta"){
-                  const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
+                  const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(line).id);
                     if(!file){
                       console.log("Invalid node id");
                       continue;
@@ -1238,7 +1238,7 @@ server.on("connection", async (socket,req) => {
         hour12: true
       });
 
-      if(data && data.type !== "empty"){
+      if(data && data.type !== "empty" || isBinary){
         return;
       } //super janky catch that prevents the login from being sent because its kind of broken xD
 

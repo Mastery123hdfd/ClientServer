@@ -512,7 +512,7 @@ server.on("connection", async (socket,req) => {
     let received = 0;
     let receivedChunks = [];
     let filebuff = null;
-    let sent;
+    let sent = false;
     
           
   
@@ -576,7 +576,11 @@ server.on("connection", async (socket,req) => {
           up.end();
           let id;
           up.on("complete", (file)=> {
-            if(sent) return;
+            if(sent == true){
+              console.log("FILE ALREADY SENT");
+              break;
+            }
+            console.log("Current 'sent' status: " + sent);
             console.log("Upload Complete");
             try{
               id = file.nodeId;
@@ -610,11 +614,12 @@ server.on("connection", async (socket,req) => {
                       }));
 
                       fs.writeFileSync("upload.bin", filebuff);
-
+                      
                       client.send(dat);
                       client.send(filebuff, { binary: true });
 
                     }
+                  if(sent == false){
                     console.log("SENT META TO CLIENTS: " + dat);
                     console.log("SENT FILES TO CLIENTS");
                 
@@ -626,7 +631,8 @@ server.on("connection", async (socket,req) => {
                       db.ref("chatlog/" + user.prtag).push({dat});
                       sent =true;
                     }
-                  continue;
+                    continue;
+                  }
                 }
               }
             }

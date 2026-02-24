@@ -539,6 +539,10 @@ server.on("connection", async (socket,req) => {
             console.log("No metadata sent!");
             return;
           }
+          if (msg === undefined || msg === null) {
+            console.log("Ignoring empty binary frame");
+            return;
+          }
           
           const fs = require("fs");
           console.log("Data received!!!");

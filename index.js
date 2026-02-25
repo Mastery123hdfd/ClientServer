@@ -43,6 +43,9 @@ async function initMega() {
           console.log("MEGA filesystem loaded.");
         });
         console.log("MEGA connected");
+        console.log("MEGA KEYS:", Object.keys(megaDB));
+        console.log("ROOT KEYS:", Object.keys(megaDB.root));
+
         return megaDB;
     } catch (err) {
         console.error("MEGA INIT ERROR:", err);

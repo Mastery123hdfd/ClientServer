@@ -607,6 +607,29 @@ server.on("connection", async (socket,req) => {
                   //Compression removed for now, w/test/as causiHAO HAOHAOng some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
                       
                       fs.writeFileSync("upload.bin", filebuff);
+                      
+                    } else { 
+                      dat = (JSON.stringify({
+                        type: "regmeta",
+                        name: meta.name,
+                        size: meta.size,
+                        mimetype: meta.type,
+                        id: id
+                      }));
+
+                      fs.writeFileSync("upload.bin", filebuff);
+
+                    
+                      
+                    }
+                    if(!filesent){
+               
+                    console.log("SENT META TO CLIENTS: " + dat);
+                    console.log("SENT FILES TO CLIENTS");
+                
+                    fs.writeFileSync("server_sent.bin", filebuff);
+                    console.log("Wrote raw binary to server_sent.bin");
+
                       const timestamp = new Date().toLocaleTimeString("en-US", {
                         timeZone: "America/Chicago",
                         hour12: true
@@ -620,45 +643,10 @@ server.on("connection", async (socket,req) => {
                       client.send(taggedMessage);
                     
                       console.log("Flavor Text Sent!");
-
-                      client.send(dat);
-                      client.send(filebuff, { binary: true });
-                    } else { 
-                      dat = (JSON.stringify({
-                        type: "regmeta",
-                        name: meta.name,
-                        size: meta.size,
-                        mimetype: meta.type,
-                        id: id
-                      }));
-
-                      fs.writeFileSync("upload.bin", filebuff);
-
-                      const timestamp = new Date().toLocaleTimeString("en-US", {
-                        timeZone: "America/Chicago",
-                        hour12: true
-                      });
-                      let taggedString = `(${timestamp}) | ${user.moniker}:`;
-                      taggedMessage = JSON.stringify({
-                        message: taggedString,
-                        prtag: user.prtag,
-                        datatype: "chat"
-                      });
-                      client.send(taggedMessage);
-                      
-                      console.log("Flavor Text Sent!");
-                      
                       client.send(dat);
                       client.send(filebuff, { binary: true });
 
-                    }
-                    if(!filesent){
-               
-                    console.log("SENT META TO CLIENTS: " + dat);
-                    console.log("SENT FILES TO CLIENTS");
-                
-                    fs.writeFileSync("server_sent.bin", filebuff);
-                    console.log("Wrote raw binary to server_sent.bin");
+                      
                     history[user.prtag].push(taggedMessage);
                     history[user.prtag].push(dat);
                     

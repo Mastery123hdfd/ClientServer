@@ -1291,7 +1291,7 @@ server.on("connection", async (socket,req) => {
 
       // ===================== NORMAL CHAT =====================
 
-      const timestamp = new Date().toLocaleTimeString("en-US", {
+      let timestamp = new Date().toLocaleTimeString("en-US", {
         timeZone: "America/Chicago",
         hour12: true
       });
@@ -1320,7 +1320,11 @@ server.on("connection", async (socket,req) => {
       }
       //socket.send("Message Generating");
 
-      
+      let taggedMessage = JSON.stringify({
+                        message: taggedString,
+                        prtag: user.prtag,
+                        datatype: "chat"
+                      });
       
      // socket.send("Message Generated");
       //socket.send("Sending to history...");

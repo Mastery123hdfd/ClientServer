@@ -331,7 +331,7 @@ async function ensureFolder(fold) {
 
 async function downloadFromMega(nodeId) {
   const filedb = megaDB;
-  const file = megaDB.root.children.find(n => n.nodeId === nodeId);
+  const file = megaDB.getNodeByHandle(nodeId);
   if (!file) throw new Error("File not found");
 
   return await new Promise((resolve, reject) => {
@@ -947,7 +947,7 @@ server.on("connection", async (socket,req) => {
 
         if (text == "/strikemsg") {
           console.log("Striked 1");
-          const removed = history[user.prtag].pop();
+          const removed = JSON.parse(history[user.prtag].pop());
           let taggedMessage = JSON.stringify({ type: "strikemsg" });
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
@@ -960,7 +960,7 @@ server.on("connection", async (socket,req) => {
               .once("value", snapshot => {
                   snapshot.forEach(child => child.ref.remove());
               });
-          const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
+          const file = megaDB.getNodeByHandle(removed.id);
           if(!file){
             console.log("Invalid node id");
             return;
@@ -1053,7 +1053,7 @@ server.on("connection", async (socket,req) => {
               if(isJson(line)){
                 const data = JSON.parse(line.toString());
                 if(data.type === "regmeta" || data.type === "imgmeta"){
-                  const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(line).id);
+                  const file = megaDB.getNodeByHandler(data.id);
                     if(!file){
                       console.log("Invalid node id");
                       continue;
@@ -1302,7 +1302,7 @@ server.on("connection", async (socket,req) => {
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
         if(isJson(removed)){
-          const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
+          const file = megaDB.getNodeByHandle(JSON.parse(removed).id);
           if(!file){
             console.log("Invalid node id");
             return;

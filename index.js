@@ -44,7 +44,7 @@ async function initMega() {
         });
         console.log("MEGA connected");
         console.log("MEGA KEYS:", Object.keys(megaDB));
-        console.log("ROOT KEYS:", Object.keys(megaDB.root));
+
 
         return megaDB;
     } catch (err) {
@@ -334,7 +334,7 @@ async function ensureFolder(fold) {
 
 async function downloadFromMega(nodeId) {
   const filedb = megaDB;
-  const file = megaDB.nodes[nodeId];
+  const file = megaDB.files[nodeId];
   if (!file) throw new Error("File not found");
 
   return await new Promise((resolve, reject) => {
@@ -991,7 +991,7 @@ server.on("connection", async (socket,req) => {
               .once("value", snapshot => {
                   snapshot.forEach(child => child.ref.remove());
               });
-          const file = megaDB.nodes[removed.id];
+          const file = megaDB.files[removed.id];
           if(!file){
             console.log("Invalid node id");
             return;
@@ -1084,7 +1084,7 @@ server.on("connection", async (socket,req) => {
               if(isJson(line)){
                 const data = JSON.parse(line.toString());
                 if(data.type === "regmeta" || data.type === "imgmeta"){
-                  const file = megaDB.nodes[data.id];
+                  const file = megaDB.files[data.id];
                     if(!file){
                       console.log("Invalid node id");
                       continue;
@@ -1329,7 +1329,7 @@ server.on("connection", async (socket,req) => {
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
         if(isJson(removed)){
-          const file = megaDB.nodes[JSON.parse(removed).id];
+          const file = megaDB.files[JSON.parse(removed).id];
           if(!file){
             console.log("Invalid node id");
             return;

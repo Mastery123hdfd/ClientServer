@@ -591,6 +591,7 @@ server.on("connection", async (socket,req) => {
               for (const [client, cUser] of clients) {
                 if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
                   let dat;
+                  let taggedMessage = "";
                     if(meta.isImg){
 
                       dat = (JSON.stringify({
@@ -608,14 +609,13 @@ server.on("connection", async (socket,req) => {
                         hour12: true
                       });
                       let taggedString = `(${timestamp}) | ${user.moniker}:`;
-                      const taggedMessage = JSON.stringify({
+                       taggedMessage = JSON.stringify({
                         message: taggedString,
                         prtag: user.prtag,
                         datatype: "chat"
                       });
                       client.send(taggedMessage);
-                      db.ref("chatlog/" + user.prtag).push({taggedMessage});
-                      history[user.prtag].push(taggedMessage);
+                    
                       console.log("Flavor Text Sent!");
 
                       client.send(dat);
@@ -636,14 +636,13 @@ server.on("connection", async (socket,req) => {
                         hour12: true
                       });
                       let taggedString = `(${timestamp}) | ${user.moniker}:`;
-                      const taggedMessage = JSON.stringify({
+                      taggedMessage = JSON.stringify({
                         message: taggedString,
                         prtag: user.prtag,
                         datatype: "chat"
                       });
                       client.send(taggedMessage);
-                      db.ref("chatlog/" + user.prtag).push({taggedMessage});
-                      history[user.prtag].push(taggedMessage);
+                      
                       console.log("Flavor Text Sent!");
                       
                       client.send(dat);
@@ -657,10 +656,11 @@ server.on("connection", async (socket,req) => {
                 
                     fs.writeFileSync("server_sent.bin", filebuff);
                     console.log("Wrote raw binary to server_sent.bin");
-
+                    history[user.prtag].push(taggedMessage);
                     history[user.prtag].push(dat);
                     
                       db.ref("chatlog/" + user.prtag).push({dat});
+                      db.ref("chatlog/" + user.prtag).push({taggedMessage});
                       filesent =true;
                       console.log("filesent is now true");
                     }

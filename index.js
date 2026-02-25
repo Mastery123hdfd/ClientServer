@@ -603,6 +603,20 @@ server.on("connection", async (socket,req) => {
                   //Compression removed for now, w/test/as causiHAO HAOHAOng some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
                       
                       fs.writeFileSync("upload.bin", filebuff);
+                      const timestamp = new Date().toLocaleTimeString("en-US", {
+                        timeZone: "America/Chicago",
+                        hour12: true
+                      });
+                      let taggedString = `(${timestamp}) | ${user.moniker}:`;
+                      const taggedMessage = JSON.stringify({
+                        message: taggedString,
+                        prtag: user.prtag,
+                        datatype: "chat"
+                      });
+                      client.send(taggedMessage);
+                      db.ref("chatlog/" + user.prtag).push({taggedMessage});
+                      history[user.prtag].push(taggedMessage);
+                      console.log("Flavor Text Sent!");
 
                       client.send(dat);
                       client.send(filebuff, { binary: true });
@@ -616,7 +630,21 @@ server.on("connection", async (socket,req) => {
                       }));
 
                       fs.writeFileSync("upload.bin", filebuff);
-                      
+
+                      const timestamp = new Date().toLocaleTimeString("en-US", {
+                        timeZone: "America/Chicago",
+                        hour12: true
+                      });
+                      let taggedString = `(${timestamp}) | ${user.moniker}:`;
+                      const taggedMessage = JSON.stringify({
+                        message: taggedString,
+                        prtag: user.prtag,
+                        datatype: "chat"
+                      });
+                      client.send(taggedMessage);
+                      db.ref("chatlog/" + user.prtag).push({taggedMessage});
+                      history[user.prtag].push(taggedMessage);
+                      console.log("Flavor Text Sent!");
                       
                       client.send(dat);
                       client.send(filebuff, { binary: true });
@@ -1290,11 +1318,7 @@ server.on("connection", async (socket,req) => {
       //socket.send("Message Generating");
 
       
-      const taggedMessage = JSON.stringify({
-        message: taggedString,
-        prtag: user.prtag,
-        datatype: "chat"
-      });
+      
      // socket.send("Message Generated");
       //socket.send("Sending to history...");
       history[user.prtag].push(taggedMessage);

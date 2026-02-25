@@ -331,7 +331,7 @@ async function ensureFolder(fold) {
 
 async function downloadFromMega(nodeId) {
   const filedb = megaDB;
-  const file = megaDB.getNodeByHandle(nodeId);
+  const file = megaDB.nodes[nodeId];
   if (!file) throw new Error("File not found");
 
   return await new Promise((resolve, reject) => {
@@ -988,7 +988,7 @@ server.on("connection", async (socket,req) => {
               .once("value", snapshot => {
                   snapshot.forEach(child => child.ref.remove());
               });
-          const file = megaDB.getNodeByHandle(removed.id);
+          const file = megaDB.nodes[removed.id];
           if(!file){
             console.log("Invalid node id");
             return;
@@ -1081,7 +1081,7 @@ server.on("connection", async (socket,req) => {
               if(isJson(line)){
                 const data = JSON.parse(line.toString());
                 if(data.type === "regmeta" || data.type === "imgmeta"){
-                  const file = megaDB.getNodeByHandler(data.id);
+                  const file = megaDB.nodes[data.id];
                     if(!file){
                       console.log("Invalid node id");
                       continue;
@@ -1326,7 +1326,7 @@ server.on("connection", async (socket,req) => {
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
         if(isJson(removed)){
-          const file = megaDB.getNodeByHandle(JSON.parse(removed).id);
+          const file = megaDB.nodes[JSON.parse(removed).id];
           if(!file){
             console.log("Invalid node id");
             return;

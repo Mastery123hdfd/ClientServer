@@ -184,7 +184,6 @@ function loadFromFirebase(db){
              const entry = msgSnap.val();
               if (entry && entry.taggedMessage) {
                  history[room].push(entry.taggedMessage);
-                 
               }
               else{
                 try{
@@ -339,7 +338,7 @@ async function downloadFromMega(nodeId) {
   const file = megaDB.files[nodeId];
   console.log("file found");
   }catch(err){
-    console.log("File Location Failed: " + err);
+    console.error("File Location Failed: " + err);
   }
   if (!file) throw new Error("File not found");
 
@@ -709,11 +708,7 @@ server.on("connection", async (socket,req) => {
         user.active = true;
 
         if (firstmessage) {
-            for (const line of history[user.prtag]) {
-                socket.send(line);
-                continue;
-            }
-            socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). ");
+            socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). Have a good day");
             firstmessage = false;
         }
 

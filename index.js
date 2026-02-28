@@ -334,7 +334,13 @@ async function ensureFolder(fold) {
 
 async function downloadFromMega(nodeId) {
   const filedb = megaDB;
+  console.log("Mega init from down");
+  try{
   const file = megaDB.files[nodeId];
+  console.log("file found");
+  }catch(err){
+    console.log("File Location Failed: " + err);
+  }
   if (!file) throw new Error("File not found");
 
   return await new Promise((resolve, reject) => {

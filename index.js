@@ -53,6 +53,32 @@ async function initMega() {
     }
 }
 
+//Mega Safety Settings:
+async function reconnectMega() {
+   console.log("Reinitializing MEGA..."); 
+   megaDB = await initMega(); 
+}
+async function safeDownloadMega(){
+  try{
+    return await downloadFromMega();
+  } catch (err){
+    console.error("MEGA DOWNLOAD ERROR THROWN FROM SAFEUPLOADMEGA(): " + err);
+    megaDB = await reconnectMega();
+    return await downloadFromMega();
+  }
+}
+
+async function safeUploadMega(metaname, metasize, data){
+  try{
+    return uploadToMega(metaname, metasize, data);
+
+  } catch(err){
+    console.error("MEGA upload failure: " + err);
+    megaDB = await reconnectMega();
+    return await uploadToMega(metaname, metasize, data);
+  }
+}
+
 async function changePrTag(tag, user, socket){
   const newPrTag = tag;
           if (!ValidateName(newPrTag)) {
@@ -170,7 +196,6 @@ function ValidateName(name) {
     return /^[^\/\\]+$/.test(name) && name.length > 0 && name.length <= 50;
 
 }
-
 
 let restrictedRooms = [];
 
@@ -545,6 +570,7 @@ server.on("connection", async (socket,req) => {
         
         
         if(isBinary){
+        try{
           if(!meta){
             console.log("No metadata sent!");
             return;
@@ -682,6 +708,12 @@ server.on("connection", async (socket,req) => {
             
           });
           return;
+        }
+        catch(err){
+          console.error("MEGA failure: " + err);
+          console.log("Attempting Reconnection...");
+          megaDB = await reconnectMega();
+        }
         }
 
         //====================== PARSE JSON ===============================

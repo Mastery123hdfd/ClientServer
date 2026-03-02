@@ -68,50 +68,40 @@ async function safeDownloadMega(){
   }
 }
 
-async function safeUploadMega(metaname, metasize, data){
-  try{
-    return uploadToMega(metaname, metasize, data);
 
-  } catch(err){
-    console.error("MEGA upload failure: " + err);
-    megaDB = await reconnectMega();
-    return await uploadToMega(metaname, metasize, data);
-  }
-}
 
 async function changePrTag(tag, user, socket){
   const newPrTag = tag;
-          if (!ValidateName(newPrTag)) {
-            socket.send("Invalid private room name.");
-            return;
-          }
+    if (!ValidateName(newPrTag)) {
+      socket.send("Invalid private room name.");
+       return;
+      } 
+    await ensureRoom(newPrTag, user, socket);
           
-          await ensureRoom(newPrTag, user, socket);
-          
-          user.prtag = newPrTag;
+    user.prtag = newPrTag;
 
-          for(const line of history[newPrTag]){
-            try {
-              if (isJson(line)) {
-                const data = JSON.parse(line.toString());
-                if (data.type === "regmeta" || data.type === "imgmeta") {
-                  socket.send(JSON.stringify(data));
+    for(const line of history[newPrTag]){
+      try {
+        if (isJson(line)) {
+          const data = JSON.parse(line.toString());
+          if (data.type === "regmeta" || data.type === "imgmeta") {
+            socket.send(JSON.stringify(data));
                   
-                  const file = await downloadFromMega(data.id);
-                  console.log("image in room " + newPrTag + " loaded: " + data.name);
-                  socket.send(file, { binary: true });
-                } else {
-                  socket.send(line.taggedMessage);
-                }
-              }
-              else{
-                socket.send(line.taggedMessage);
-              }
-            } catch (e) {
-              console.error("Error sending MEGA file:", e);
-            }
+            const file = await downloadFromMega(data.id);
+            console.log("image in room " + newPrTag + " loaded: " + data.name);
+            socket.send(file, { binary: true });
+          } else {
+            socket.send(line.taggedMessage);
           }
-          return;
+        }
+        else{
+          socket.send(line.taggedMessage);
+        }
+      } catch (e) {
+        console.error("Error sending MEGA file:", e);
+      }
+    }
+  return;
 }
 
 const http = require("http");
@@ -484,6 +474,7 @@ async function loadAccounts(db){
         loginfo[a.user] = a.pass; 
       } 
       console.log("Login accounts loaded."); 
+      console.log("Version 2.01.02d1");
     });
   } catch(err){
     console.error("Error loading login accounts from Firebase:", err);

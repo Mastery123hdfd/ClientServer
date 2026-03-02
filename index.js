@@ -75,11 +75,11 @@ async function changePrTag(tag, user, socket){
                   console.log("image in room " + newPrTag + " loaded: " + data.name);
                   socket.send(file, { binary: true });
                 } else {
-                  socket.send(line);
+                  socket.send(line.taggedMessage);
                 }
               }
               else{
-                socket.send(line);
+                socket.send(line.taggedMessage);
               }
             } catch (e) {
               console.error("Error sending MEGA file:", e);
@@ -182,8 +182,8 @@ function loadFromFirebase(db){
           history[room] = [];
           roomSnap.forEach(msgSnap => {
              const entry = msgSnap.val();
-              if (entry && entry.taggedMessage) {
-                 history[room].push(entry.taggedMessage);
+              if (entry) {
+                 history[room].push(entry);
               }
               else{
                 try{

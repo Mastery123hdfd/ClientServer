@@ -58,9 +58,9 @@ async function reconnectMega() {
    console.log("Reinitializing MEGA..."); 
    megaDB = await initMega(); 
 }
-async function safeDownloadMega(){
+async function safeDownloadMega(id){
   try{
-    return await downloadFromMega();
+    return await downloadFromMega(id);
   } catch (err){
     console.error("MEGA DOWNLOAD ERROR THROWN FROM SAFEUPLOADMEGA(): " + err);
     megaDB = await reconnectMega();
@@ -87,7 +87,7 @@ async function changePrTag(tag, user, socket){
           if (data.type === "regmeta" || data.type === "imgmeta") {
             socket.send(JSON.stringify(data));
                   
-            const file = await downloadFromMega(data.id);
+            const file = await safeDownloadMega(data.id);
             console.log("image in room " + newPrTag + " loaded: " + data.name);
             socket.send(file, { binary: true });
           } else {
@@ -493,6 +493,20 @@ function ensureAccount(user, pass){
   }
 }
 
+async function SafeUpload(meta, receivedChunks){
+  const targetFolder = megaDB.root;
+          
+  const up = targetFolder.upload({
+    name: meta.name,
+    size: meta.size
+  });
+  for (const chunk of receivedChunks) {
+    up.write(chunk); 
+  } // Finalize the stream 
+  return up;
+  up.end();
+}
+
 //======================================================================================================
 //======================================================================================================
 //BANNING CODE
@@ -590,16 +604,9 @@ server.on("connection", async (socket,req) => {
           const filedb = megaDB;
           fs.writeFileSync("file_made.bin", filebuff);
           console.log("Written to file_made.bin");
-          const targetFolder = megaDB.root;
+
+          const up = SafeUpload(meta, ReceivedChunks);
           
-          const up = targetFolder.upload({
-            name: meta.name,
-            size: meta.size
-          });
-          for (const chunk of receivedChunks) {
-            up.write(chunk); 
-          } // Finalize the stream 
-          up.end();
           let id;
           up.on("complete", (file)=> {
             if(sent == true){
@@ -626,7 +633,7 @@ server.on("connection", async (socket,req) => {
                         mimetype: meta.type,
                         id: id
                       }));
-                  //Compression removed for now, w/test/as causiHAO HAOHAOng some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
+                  //Compression removed for now, was causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
                       
                       fs.writeFileSync("upload.bin", filebuff);
                       
@@ -820,7 +827,7 @@ server.on("connection", async (socket,req) => {
                 if (data.type === "regmeta" || data.type === "imgmeta") {
                   socket.send(JSON.stringify(data));
                   
-                  const file = await downloadFromMega(data.id);
+                  const file = await safeDownloadMega(data.id);
                   console.log("image in room " + newPrTag + " loaded: " + data.name);
                   socket.send(file, { binary: true });
                 } else {

@@ -362,7 +362,10 @@ async function downloadFromMega(nodeId) {
     file.download()
       .on("data", c => chunks.push(c))
       .on("end", () => resolve(Buffer.concat(chunks)))
-      .on("error", reject);
+      .on("error", err => {
+        console.error("MEGA Download Error!");
+        resolve(null);
+      });
   });
 }
 

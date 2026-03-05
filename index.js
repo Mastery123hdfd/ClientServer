@@ -611,7 +611,7 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           console.log("Written to file_made.bin");
 
-          const up = SafeUpload(meta, ReceivedChunks);
+          const up = SafeUpload(meta, receivedChunks);
           
           let id;
           up.on("complete", (file)=> {

@@ -600,7 +600,7 @@ server.on("connection", async (socket,req) => {
 
           const targetFolder = megaDB.root;
           try{
-            const up = targetFolder.upload({
+            const up = await targetFolder.upload({
              name: meta.name,
              size: meta.size
             });

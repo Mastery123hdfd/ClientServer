@@ -495,19 +495,6 @@ function ensureAccount(user, pass){
   }
 }
 
-async function SafeUpload(meta, receivedChunks){
-  const targetFolder = megaDB.root;
-          
-  const up = targetFolder.upload({
-    name: meta.name,
-    size: meta.size
-  });
-  for (const chunk of receivedChunks) {
-    up.write(chunk); 
-  } // Finalize the stream 
-  return up;
-  up.end();
-}
 
 //======================================================================================================
 //======================================================================================================
@@ -611,7 +598,19 @@ server.on("connection", async (socket,req) => {
           fs.writeFileSync("file_made.bin", filebuff);
           console.log("Written to file_made.bin");
 
-          const up = SafeUpload(meta, receivedChunks);
+          const targetFolder = megaDB.root;
+          try{
+            const up = targetFolder.upload({
+             name: meta.name,
+             size: meta.size
+            });
+            for (const chunk of receivedChunks) {
+              up.write(chunk); 
+            } // Finalize the streams
+            up.end();
+          } catch(err){
+            console.error("MEGA upload failure:"  + err);
+          }
           
           let id;
           up.on("complete", (file)=> {

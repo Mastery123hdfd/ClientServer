@@ -269,7 +269,7 @@ let adminArray =[];
 let regArray =[];
 
 
-history["main"] = [];
+history["main2"] = [];
 
 async function ensureRoom(tag, user, socket) {
   if (!Array.isArray(history[tag])) {
@@ -523,7 +523,11 @@ server.on("connection", async (socket,req) => {
     console.log("Client connected");
     let firstmessage = true;
     let command = false;
-    const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress;
+
+    console.log("Client IP: " + ip);
     let ipBanArray = Array.from(bannedIPs.values())
     if(ipBanArray.includes(ip)){
       socket.send("You are banned. If you believe this is a mistake, please contact an admin.");
@@ -1032,6 +1036,7 @@ server.on("connection", async (socket,req) => {
         // ===================== HANDLE BAN TARGET ==========================
 
         if (user.awaitingBanTarget == true) {
+          let found = 0;
           clients.forEach((cUser, client) => {
             if (cUser.moniker === text) {
               if (client._socket && client._socket.remoteAddress) {
@@ -1043,9 +1048,15 @@ server.on("connection", async (socket,req) => {
               client.send("You have been banned by " + user.moniker);
               client.close();
               socket.send("User " + user.awaitingBanTarget + " has been banned.");
+              found++;
               user.awaitingBanTarget = false;
             }
+            
           });
+          if(found === 0){
+              socket.send("User Not Found!!");
+              user.awaitingBanTarget = false;
+          }
           return;
         } // I didn't do anything?
 

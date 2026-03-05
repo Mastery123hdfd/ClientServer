@@ -599,8 +599,8 @@ server.on("connection", async (socket,req) => {
           console.log("Written to file_made.bin");
 
           const targetFolder = megaDB.root;
-          try{
-            const up = await targetFolder.upload({
+          
+            const up = targetFolder.upload({
              name: meta.name,
              size: meta.size
             });
@@ -608,9 +608,7 @@ server.on("connection", async (socket,req) => {
               up.write(chunk); 
             } // Finalize the streams
             up.end();
-          } catch(err){
-            console.error("MEGA upload failure:"  + err);
-          }
+          
           
           let id;
           up.on("complete", (file)=> {

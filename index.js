@@ -20,7 +20,7 @@ async function initMega(){
 
     await megaDB.login();
     console.log("Mega Logged In"); // Humans are so cool 
-    console.log(Objects.keys(megaDB));
+    console.log(Object.keys(megaDB));
     root = megaDB.root;
 
     /*megaDB.on('ready', () => {

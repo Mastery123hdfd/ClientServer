@@ -841,11 +841,11 @@ server.on("connection", async (socket,req) => {
                   console.log("image in room " + newPrTag + " loaded: " + data.name);
                   socket.send(file, { binary: true });
                 } else {
-                  socket.send(line);
+                  socket.send(JSON.stringify(line));
                 }
               }
               else{
-                socket.send(line);
+                socket.send(JSON.stringify(line));
               }
             } catch (e) {
               console.error("Error sending MEGA file:", e);

@@ -10,23 +10,30 @@ async function getAdmin(){
 
 
 async function initMega(){
-    const { Storage } = require('megajs');
+  const { Storage } = require('megajs');
   try {
     let megaDB = new Storage({
       email: process.env.MEGA_EMAIL,
-      password: process.env.MEGA_PASSWORD
+      password: process.env.MEGA_PASSWORD,
+      autologin:false
     });
 
-    megaDB.on('ready', () => {
+    await megaDB.login();
+    console.log("Mega Logged In"); // Humans are so cool 
+    console.log(Objects.keys(megaDB));
+    root = megaDB.root;
+
+    /*megaDB.on('ready', () => {
       console.log("MEGA filesystem loaded.");
-      root = megaDB.root;
-    });
+      console.log(Object.keys(megaDB)); //As you can see, it is run in the 'ready' event, so it should display inbox trash and root among others 
+      //root = megaDB.root; The root property is broken, so this line is broken.
+    });*/
 
     console.log("MEGA connected");
     return megaDB;
 
   } catch (err) {
-    console.error("MEGA INIT ERROR:" + err);
+    console.error("Mega failure: " + err);
     setTimeout(initMega, 3000);
   }
 }
@@ -93,9 +100,9 @@ async function changePrTag(tag, user, socket){
           if (data.type === "regmeta" || data.type === "imgmeta") {
             socket.send(JSON.stringify(data));
                   
-            const file = await safeDownloadMega(data.id);
+            const filet = await safeDownloadMega(data.id);
             console.log("image in room " + newPrTag + " loaded: " + data.name);
-            socket.send(file, { binary: true });
+            socket.send(filet, { binary: true });
           } else {
             socket.send(line.taggedMessage);
           }

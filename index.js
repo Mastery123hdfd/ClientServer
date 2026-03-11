@@ -32,6 +32,7 @@ setInterval(() => {
   last = now;
 }, 500);
 
+let root;
 
 async function initMega() {
   const { Storage } = require('megajs');
@@ -43,6 +44,18 @@ async function initMega() {
           console.log("MEGA filesystem loaded.");
         });
         console.log("MEGA connected");
+        try{
+          console.log(Object.keys(megaDB));  
+        } catch (err){
+          console.error("Error getting properties " + err );
+        }
+        try{
+        root = megaDB.root();
+        console.log("Root Established");
+        } catch(err){
+          console.error("Error Finding Root Object .root" + err);
+        }
+
 
 
         return megaDB;
@@ -51,6 +64,8 @@ async function initMega() {
         setTimeout(initMega, 3000); // retry
     }
 }
+
+
 
 //Mega Safety Settings:
 async function reconnectMega() {

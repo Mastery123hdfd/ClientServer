@@ -9,7 +9,27 @@ async function getAdmin(){
 }
 
 
+async function initMega(){
+    const { Storage } = require('megajs');
+  try {
+    let megaDB = new Storage({
+      email: process.env.MEGA_EMAIL,
+      password: process.env.MEGA_PASSWORD
+    });
 
+    megaDB.on('ready', () => {
+      console.log("MEGA filesystem loaded.");
+      root = megaDB.root;
+    });
+
+    console.log("MEGA connected");
+    return megaDB;
+
+  } catch (err) {
+    console.error("MEGA INIT ERROR:" + err);
+    setTimeout(initMega, 3000);
+  }
+}
 
 process.on("uncaughtException", err => {
   console.error("UNCAUGHT EXCEPTION:", err);
@@ -34,36 +54,8 @@ setInterval(() => {
 
 let root;
 
-async function initMega() {
-  const { Storage } = require('megajs');
-    try {
-        let megaDB = await new Storage({
-            email: process.env.MEGA_EMAIL, password: process.env.MEGA_PASSWORD
-        });
-        megaDB.on('ready', () => {
-          console.log("MEGA filesystem loaded.");
-        });
-        console.log("MEGA connected");
-        try{
-          console.log(Object.keys(megaDB));  
-        } catch (err){
-          console.error("Error getting properties " + err );
-        }
-        try{
-        root = megaDB.root();
-        console.log("Root Established");
-        } catch(err){
-          console.error("Error Finding Root Object .root" + err);
-        }
 
 
-
-        return megaDB;
-    } catch (err) {
-        console.error("MEGA INIT ERROR:", err);
-        setTimeout(initMega, 3000); // retry
-    }
-}
 
 
 

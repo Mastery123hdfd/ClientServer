@@ -372,7 +372,9 @@ async function downloadFromMega(nodeId) {
 
   return await new Promise((resolve, reject) => {
     const chunks = [];
-    file.download()
+    file.download((err, data)=>{
+      if(err) console.error("Error with downloading: ", err);
+    })
       .on("data", c => chunks.push(c))
       .on("end", () => resolve(Buffer.concat(chunks)))
       .on("error", err => {

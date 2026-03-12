@@ -19,8 +19,8 @@ async function initMega(){
     });
 
     await megaDB.login();
-    console.log("Mega Logged In"); // Humans are so cool 
-    console.log(Object.keys(megaDB));
+    console.log("Mega Logged In"); 
+    console.log(Object.keys(megaDB)); // 
     root = megaDB.root;
 
     /*megaDB.on('ready', () => {
@@ -100,9 +100,9 @@ async function changePrTag(tag, user, socket){
           if (data.type === "regmeta" || data.type === "imgmeta") {
             socket.send(JSON.stringify(data));
                   
-            const filet = await safeDownloadMega(data.id);
+            const file = await safeDownloadMega(data.id);
             console.log("image in room " + newPrTag + " loaded: " + data.name);
-            socket.send(filet, { binary: true });
+            socket.send(file, { binary: true });
           } else {
             socket.send(line.taggedMessage);
           }

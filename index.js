@@ -363,8 +363,8 @@ async function downloadFromMega(nodeId) {
   const filedb = megaDB;
   console.log("Mega init from down");
   try{
-  const file = megaDB.files[nodeId];
-  console.log("file found");
+    const file = megaDB.files[nodeId];
+    console.log("file found");
   }catch(err){
     console.error("File Location Failed: " + err);
   }
@@ -508,6 +508,14 @@ function ensureAccount(user, pass){
     return true;
   }
 }
+
+
+
+let userarray = [];
+for(let [k, v] of loginfo){
+  userarray.push(k);
+}
+console.log("User Array Filled");
 
 
 //======================================================================================================
@@ -759,15 +767,21 @@ server.on("connection", async (socket,req) => {
             firstmessage = false;
         }
 
-        //==================== HANDLE EMPTY MESSAGE ==========================
-        if(text === ""){
-          return;
-        }
+        
 
         // ===================== NAME CHANGE HANDLER =====================
 
         if (user.newName) {
+            
             const newMoniker = text?.trim();
+            if(userarray.includes(newMoniker)){
+              socket.send("Duplicate Users are disabled... For now...");
+              return;
+            }
+            if(newMoniker == ""){
+              socket.send("No Blank Monikers Allowed!");
+              return;
+            }
 
             if (!newMoniker || !ValidateName(newMoniker)) {
                 socket.send("Invalid Moniker.");
@@ -910,6 +924,8 @@ server.on("connection", async (socket,req) => {
       // ===================== LOGIN =====================
 
       if (data && data.type === "login") {
+        let logindataunsent = true;
+        let tokenb = true;
         try {
             socket.send("Processing login...");
 
@@ -945,14 +961,16 @@ server.on("connection", async (socket,req) => {
               user.mod = false;
               user.loggedIn = true;
               socket.send("New account created and logged in as " + userin);
-              
-              db.ref("logindata/accountdata/").push({
-                user: userin, 
-                pass: passin,   
-                disp: userin,
-                admin: false,
-                mod: false
-              });
+              if(logindataunsent){
+                db.ref("logindata/accountdata/").push({
+                  user: userin, 
+                  pass: passin,   
+                  disp: userin,
+                  admin: false,
+                  mod: false
+                });
+                logindataunsent = false;
+              }
               return;
             }
             if (!acc) {
@@ -975,6 +993,7 @@ server.on("connection", async (socket,req) => {
             const token = require("crypto").randomBytes(16).toString("hex");
 
             socket.send("Token created!");
+            if(tokenb){
             db.ref("sessions/" + token).set({
               username: acc.user,
               pass: acc.pass,
@@ -982,6 +1001,8 @@ server.on("connection", async (socket,req) => {
               mod: acc.mod,
               disp: acc.disp
             });
+            tokenb = false;
+            }
             user.sessionToken = token;
             socket.send(JSON.stringify({type: "sessionToken", tokenid: token}));
           
@@ -1050,15 +1071,15 @@ server.on("connection", async (socket,req) => {
           let found = 0;
           clients.forEach((cUser, client) => {
             if (cUser.moniker === text) {
-              if (client._socket && client._socket.remoteAddress) {
-                const ip = client._socket.remoteAddress;
-                if (!bannedIPs.has(text)) {
-                  bannedIPs.set(cUser.moniker, ip);
-                }
+              if (client._socket && ip) {
+                
+                
+                bannedIPs.set(cUser.moniker, ip);
+                
               }
               client.send("You have been banned by " + user.moniker);
               client.close();
-              socket.send("User " + user.awaitingBanTarget + " has been banned.");
+              socket.send("User " + cUser.moniker + " has been banned.");
               found++;
               user.awaitingBanTarget = false;
             }

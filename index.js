@@ -103,6 +103,7 @@ async function changePrTag(tag, user, socket){
           const data = JSON.parse(line.toString());
           if ((data.type === "regmeta" || data.type === "imgmeta") && data.id) {
             socket.send(JSON.stringify(data));
+            console.log("Attempting to load image in room " + newPrTag + " with id: " + data.id);
                   
             const file = await safeDownloadMega(data.id);
             console.log("image in room " + newPrTag + " loaded: " + data.name);
@@ -118,6 +119,7 @@ async function changePrTag(tag, user, socket){
         console.error("Error sending MEGA file:", e);
       }
     }
+    console.log("History successfully loaded for user " + user.disp + " in room " + newPrTag);
   return;
 }
 
@@ -287,7 +289,7 @@ let adminArray =[];
 let regArray =[];
 
 
-history["main2"] = [];
+history["main"] = [];
 
 async function ensureRoom(tag, user, socket) {
   if (!Array.isArray(history[tag])) {
@@ -299,7 +301,7 @@ async function ensureRoom(tag, user, socket) {
     } else {
       socket.send("Regular Users cannot create their own rooms. Use the room code given to you by a mod.");
       
-      for (const line of history["main2"]) {
+      for (const line of history["main"]) {
         
         socket.send(line);
         continue;
@@ -560,13 +562,13 @@ server.on("connection", async (socket,req) => {
       pass:null,
       admin: false,
       mod: false,
-      prtag:"main2",
+      prtag:"main",
       active: false,
       loggedIn: false,
       sessionToken: null
     });
     let meta = null;
-    await changePrTag("main2", clients.get(socket), socket);
+    await changePrTag("main", clients.get(socket), socket);
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
     let received = 0;
@@ -1184,7 +1186,7 @@ server.on("connection", async (socket,req) => {
 
         if (text == "/delroom" && user.admin) {
 
-          if (user.prtag == "main2") {
+          if (user.prtag == "main") {
 
             socket.send("Room 'main' cannot be removed");
             return;
@@ -1192,17 +1194,17 @@ server.on("connection", async (socket,req) => {
           } else {
 
               let previoustag = user.prtag;
-              user.prtag = "main2";
+              user.prtag = "main";
 
               socket.send(JSON.stringify({ type: "clearHistory" }));
 
-              for (const line of history["main2"]) {
+              for (const line of history["main"]) {
                   socket.send(line);
               }
 
               for (const [client, cUser] of clients) {
                   if (cUser.prtag == previoustag) {
-                      cUser.prtag = "main2";
+                      cUser.prtag = "main";
                   }
               }
   

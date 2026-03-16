@@ -272,7 +272,7 @@ try{
 
 const cmdliststring = ["====Command List====", "/help: Displays this menu", "/cmd: Activates command mode", "/getprlist: Gets a list of all private rooms; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/strikemsg: Removes a message from the chat history and clears it from everyone's logs; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/clearhist: Clears the entire history of the current chat room; ADMIN ONLY; COMMAND MODE REQUIRED", "/getplayers: Gets a list of all users currently online; BROKEN", "/login: Starts the login process", "/changename: Changes your name", "/gethistlength: Gets the length of the current chat history; ADMIN ONLY; COMMAND MODE REQUIRED", "/loginhelp: Gives you instructions on how to login"]; 
 
-const loginfo = {};
+let loginfo = {};
 
 //This is the Admin Account login I accidentally left here, you're not getting this info ;)
 loginfo["testUser1"] ="101";
@@ -517,8 +517,8 @@ function ensureAccount(user, pass){
 
 
 let userarray = [];
-for(let [k, v] of loginfo){
-  userarray.push(k);
+for(const keys of loginfo.keys()){
+  userarray.push(keys);
 }
 console.log("User Array Filled");
 

@@ -272,10 +272,10 @@ try{
 
 const cmdliststring = ["====Command List====", "/help: Displays this menu", "/cmd: Activates command mode", "/getprlist: Gets a list of all private rooms; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/strikemsg: Removes a message from the chat history and clears it from everyone's logs; MOD / ADMIN ONLY; COMMAND MODE REQUIRED", "/clearhist: Clears the entire history of the current chat room; ADMIN ONLY; COMMAND MODE REQUIRED", "/getplayers: Gets a list of all users currently online; BROKEN", "/login: Starts the login process", "/changename: Changes your name", "/gethistlength: Gets the length of the current chat history; ADMIN ONLY; COMMAND MODE REQUIRED", "/loginhelp: Gives you instructions on how to login"]; 
 
-let loginfo = {};
+let loginfo = new Map();
 
 //This is the Admin Account login I accidentally left here, you're not getting this info ;)
-loginfo["testUser1"] ="101";
+loginfo.set("testUser1", "101");
 
 //Hard-coded accounts that are embedded into the server.
 
@@ -492,7 +492,7 @@ async function loadAccounts(db){
         if (a.mod) modArray.push(a);
         if (a.admin) adminArray.push(a);
         regArray.push(a);
-        loginfo[a.user] = a.pass; 
+        loginfo.set(a.user, a.pass);
       } 
       console.log("Login accounts loaded."); 
       console.log("Version 2.01.02d1");

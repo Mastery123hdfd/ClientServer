@@ -543,10 +543,11 @@ server.on("connection", async (socket,req) => {
 
     console.log("Client IP: " + ip);
   
-    if(bannedIPs.includes(ip)){
-      socket.send("You are banned. If you believe this is a mistake, please contact an admin.");
-      socket.close();
-      return;
+    for(const values of bannedIPs.values()){
+      if(ip == values){
+        socket.send("You are banned from this server.");
+        socket.close();
+      }
     }
     
 

@@ -18,7 +18,10 @@ async function initMega(){
       autologin:false
     });
 
-    await megaDB.login();
+    megaDB.login((err, s) => {
+      if (err) console.error(err)
+    });
+
     console.log("Mega Logged In"); 
     console.log(Object.keys(megaDB)); // 
     root = megaDB.root;

@@ -97,7 +97,7 @@ async function changePrTag(tag, user, socket){
       try {
         if (isJson(line)) {
           const data = JSON.parse(line.toString());
-          if (data.type === "regmeta" || data.type === "imgmeta") {
+          if ((data.type === "regmeta" || data.type === "imgmeta") && data.id) {
             socket.send(JSON.stringify(data));
                   
             const file = await safeDownloadMega(data.id);
@@ -363,7 +363,7 @@ async function downloadFromMega(nodeId) {
   const filedb = megaDB;
   console.log("Mega init from down");
   try{
-    const file = megaDB.files[nodeId];
+    const file = filedb.files[nodeId];
     console.log("file found");
   }catch(err){
     console.error("File Location Failed: " + err);
@@ -523,7 +523,7 @@ console.log("User Array Filled");
 //======================================================================================================
 //======================================================================================================
 //BANNING CODE
-const bannedIPs = new Map();
+let bannedIPs = new Map();
 //username, ip
 //======================================================================================================
 //========================================================================================================
@@ -539,8 +539,8 @@ server.on("connection", async (socket,req) => {
       req.socket.remoteAddress;
 
     console.log("Client IP: " + ip);
-    let ipBanArray = Array.from(bannedIPs.values())
-    if(ipBanArray.includes(ip)){
+  
+    if(bannedIPs.includes(ip)){
       socket.send("You are banned. If you believe this is a mistake, please contact an admin.");
       socket.close();
       return;

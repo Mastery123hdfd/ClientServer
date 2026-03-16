@@ -372,7 +372,7 @@ async function downloadFromMega(nodeId) {
   }catch(err){
     console.error("File Location Failed: " + err);
   }
-  if (!file) throw new Error("File not found: ", nodeId);
+  const file = filedb.files[nodeId];
 
   return await new Promise((resolve, reject) => {
     const chunks = [];

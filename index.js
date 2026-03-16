@@ -9,7 +9,34 @@ async function getAdmin(){
 }
 
 
+async function initMega(){
+  const { Storage } = require('megajs');
+  try {
+    let megaDB = new Storage({
+      email: process.env.MEGA_EMAIL,
+      password: process.env.MEGA_PASSWORD,
+      autologin:false
+    });
 
+    await megaDB.login();
+    console.log("Mega Logged In"); 
+    console.log(Object.keys(megaDB)); // 
+    root = megaDB.root;
+
+    /*megaDB.on('ready', () => {
+      console.log("MEGA filesystem loaded.");
+      console.log(Object.keys(megaDB)); //As you can see, it is run in the 'ready' event, so it should display inbox trash and root among others 
+      //root = megaDB.root; The root property is broken, so this line is broken.
+    });*/
+
+    console.log("MEGA connected");
+    return megaDB;
+
+  } catch (err) {
+    console.error("Mega failure: " + err);
+    setTimeout(initMega, 3000);
+  }
+}
 
 process.on("uncaughtException", err => {
   console.error("UNCAUGHT EXCEPTION:", err);
@@ -32,57 +59,62 @@ setInterval(() => {
   last = now;
 }, 500);
 
+let root;
 
-async function initMega() {
-  const { Storage } = require('megajs');
-    try {
-        let megaDB = await new Storage({
-            email: process.env.MEGA_EMAIL, password: process.env.MEGA_PASSWORD
-        });
-        megaDB.on('ready', () => {
-          console.log("MEGA filesystem loaded.");
-        });
-        console.log("MEGA connected");
-        return megaDB;
-    } catch (err) {
-        console.error("MEGA INIT ERROR:", err);
-        setTimeout(initMega, 3000); // retry
-    }
+
+
+
+
+
+//Mega Safety Settings:
+async function reconnectMega() {
+   console.log("Reinitializing MEGA..."); 
+   megaDB = await initMega(); 
 }
+async function safeDownloadMega(id){
+  try{
+    return await downloadFromMega(id);
+  } catch (err){
+    console.error("MEGA DOWNLOAD ERROR THROWN FROM SAFEUPLOADMEGA(): " + err);
+    megaDB = await reconnectMega();
+    return await downloadFromMega(id);
+  }
+}
+
+
 
 async function changePrTag(tag, user, socket){
   const newPrTag = tag;
-          if (!ValidateName(newPrTag)) {
-            socket.send("Invalid private room name.");
-            return;
-          }
+    if (!ValidateName(newPrTag)) {
+      socket.send("Invalid private room name.");
+       return;
+      } 
+    await ensureRoom(newPrTag, user, socket);
           
-          await ensureRoom(newPrTag, user, socket);
-          
-          user.prtag = newPrTag;
+    user.prtag = newPrTag;
 
-          for(const line of history[newPrTag]){
-            try {
-              if (isJson(line)) {
-                const data = JSON.parse(line.toString());
-                if (data.type === "regmeta" || data.type === "imgmeta") {
-                  socket.send(JSON.stringify(data));
+    for(const line of history[newPrTag]){
+      try {
+        if (isJson(line)) {
+          const data = JSON.parse(line.toString());
+          if (data.type === "regmeta" || data.type === "imgmeta") {
+            socket.send(JSON.stringify(data));
                   
-                  const file = await downloadFromMega(data.id);
-                  console.log("image in room " + newPrTag + " loaded: " + data.name);
-                  socket.send(file, { binary: true });
-                } else {
-                  socket.send(line);
-                }
-              }
-              else{
-                socket.send(line);
-              }
-            } catch (e) {
-              console.error("Error sending MEGA file:", e);
-            }
+            const file = await safeDownloadMega(data.id);
+            console.log("image in room " + newPrTag + " loaded: " + data.name);
+            socket.send(file, { binary: true });
+          } else {
+            socket.send(line.taggedMessage);
           }
-          return;
+        }
+        else{
+          socket.send(line.taggedMessage);
+        }
+      } catch (e) {
+        console.error("Error sending MEGA file:", e);
+      }
+    }
+  return;
 }
 
 const http = require("http");
@@ -168,7 +200,6 @@ function ValidateName(name) {
 
 }
 
-
 let restrictedRooms = [];
 
 function loadFromFirebase(db){
@@ -179,9 +210,8 @@ function loadFromFirebase(db){
           history[room] = [];
           roomSnap.forEach(msgSnap => {
              const entry = msgSnap.val();
-              if (entry && entry.taggedMessage) {
-                 history[room].push(entry.taggedMessage);
-                 
+              if (entry) {
+                 history[room].push(entry);
               }
               else{
                 try{
@@ -253,7 +283,7 @@ let adminArray =[];
 let regArray =[];
 
 
-history["main"] = [];
+history["main2"] = [];
 
 async function ensureRoom(tag, user, socket) {
   if (!Array.isArray(history[tag])) {
@@ -265,7 +295,7 @@ async function ensureRoom(tag, user, socket) {
     } else {
       socket.send("Regular Users cannot create their own rooms. Use the room code given to you by a mod.");
       
-      for (const line of history["main"]) {
+      for (const line of history["main2"]) {
         
         socket.send(line);
         continue;
@@ -331,15 +361,26 @@ async function ensureFolder(fold) {
 
 async function downloadFromMega(nodeId) {
   const filedb = megaDB;
-  const file = megaDB.root.children.find(n => n.nodeId === nodeId);
+  console.log("Mega init from down");
+  try{
+    const file = megaDB.files[nodeId];
+    console.log("file found");
+  }catch(err){
+    console.error("File Location Failed: " + err);
+  }
   if (!file) throw new Error("File not found");
 
   return await new Promise((resolve, reject) => {
     const chunks = [];
-    file.download()
+    file.download((err, data)=>{
+      if(err) console.error("Error with downloading: ", err);
+    })
       .on("data", c => chunks.push(c))
       .on("end", () => resolve(Buffer.concat(chunks)))
-      .on("error", reject);
+      .on("error", err => {
+        console.error("MEGA Download Error!");
+        resolve(null);
+      });
   });
 }
 
@@ -451,6 +492,7 @@ async function loadAccounts(db){
         loginfo[a.user] = a.pass; 
       } 
       console.log("Login accounts loaded."); 
+      console.log("Version 2.01.02d1");
     });
   } catch(err){
     console.error("Error loading login accounts from Firebase:", err);
@@ -469,6 +511,15 @@ function ensureAccount(user, pass){
   }
 }
 
+
+
+let userarray = [];
+for(let [k, v] of loginfo){
+  userarray.push(k);
+}
+console.log("User Array Filled");
+
+
 //======================================================================================================
 //======================================================================================================
 //BANNING CODE
@@ -483,7 +534,11 @@ server.on("connection", async (socket,req) => {
     console.log("Client connected");
     let firstmessage = true;
     let command = false;
-    const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress;
+
+    console.log("Client IP: " + ip);
     let ipBanArray = Array.from(bannedIPs.values())
     if(ipBanArray.includes(ip)){
       socket.send("You are banned. If you believe this is a mistake, please contact an admin.");
@@ -500,13 +555,13 @@ server.on("connection", async (socket,req) => {
       pass:null,
       admin: false,
       mod: false,
-      prtag:"main",
+      prtag:"main2",
       active: false,
       loggedIn: false,
       sessionToken: null
     });
     let meta = null;
-    await changePrTag("main", clients.get(socket), socket);
+    await changePrTag("main2", clients.get(socket), socket);
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
     let received = 0;
@@ -537,6 +592,7 @@ server.on("connection", async (socket,req) => {
         
         
         if(isBinary){
+        try{
           if(!meta){
             console.log("No metadata sent!");
             return;
@@ -565,16 +621,19 @@ server.on("connection", async (socket,req) => {
           const filedb = megaDB;
           fs.writeFileSync("file_made.bin", filebuff);
           console.log("Written to file_made.bin");
+
           const targetFolder = megaDB.root;
           
-          const up = targetFolder.upload({
-            name: meta.name,
-            size: meta.size
-          });
-          for (const chunk of receivedChunks) {
-            up.write(chunk); 
-          } // Finalize the stream 
-          up.end();
+            const up = targetFolder.upload({
+             name: meta.name,
+             size: meta.size
+            });
+            for (const chunk of receivedChunks) {
+              up.write(chunk); 
+            } // Finalize the streams
+            up.end();
+          
+          
           let id;
           up.on("complete", (file)=> {
             if(sent == true){
@@ -591,6 +650,7 @@ server.on("connection", async (socket,req) => {
               for (const [client, cUser] of clients) {
                 if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
                   let dat;
+                  let taggedMessage = "";
                     if(meta.isImg){
 
                       dat = (JSON.stringify({
@@ -600,12 +660,10 @@ server.on("connection", async (socket,req) => {
                         mimetype: meta.type,
                         id: id
                       }));
-                  //Compression removed for now, w/test/as causiHAO HAOHAOng some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
+                  //Compression removed for now, was causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
                       
                       fs.writeFileSync("upload.bin", filebuff);
-
-                      client.send(dat);
-                      client.send(filebuff, { binary: true });
+                      
                     } else { 
                       dat = (JSON.stringify({
                         type: "regmeta",
@@ -616,11 +674,9 @@ server.on("connection", async (socket,req) => {
                       }));
 
                       fs.writeFileSync("upload.bin", filebuff);
-                      
-                      
-                      client.send(dat);
-                      client.send(filebuff, { binary: true });
 
+                    
+                      
                     }
                     if(!filesent){
                
@@ -630,9 +686,28 @@ server.on("connection", async (socket,req) => {
                     fs.writeFileSync("server_sent.bin", filebuff);
                     console.log("Wrote raw binary to server_sent.bin");
 
+                      const timestamp = new Date().toLocaleTimeString("en-US", {
+                        timeZone: "America/Chicago",
+                        hour12: true
+                      });
+                      let taggedString = `(${timestamp}) | ${user.moniker}:`;
+                       taggedMessage = JSON.stringify({
+                        message: taggedString,
+                        prtag: user.prtag,
+                        datatype: "chat"
+                      });
+                      client.send(taggedMessage);
+                    
+                      console.log("Flavor Text Sent!");
+                      client.send(dat);
+                      client.send(filebuff, { binary: true });
+
+                      
+                    history[user.prtag].push(taggedMessage);
                     history[user.prtag].push(dat);
                     
                       db.ref("chatlog/" + user.prtag).push({dat});
+                      db.ref("chatlog/" + user.prtag).push({taggedMessage});
                       filesent =true;
                       console.log("filesent is now true");
                     }
@@ -659,6 +734,12 @@ server.on("connection", async (socket,req) => {
           });
           return;
         }
+        catch(err){
+          console.error("MEGA failure: " + err);
+          console.log("Attempting Reconnection...");
+          megaDB = await reconnectMega();
+        }
+        }
 
         //====================== PARSE JSON ===============================
         
@@ -684,23 +765,25 @@ server.on("connection", async (socket,req) => {
         user.active = true;
 
         if (firstmessage) {
-            for (const line of history[user.prtag]) {
-                socket.send(line);
-                continue;
-            }
-            socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). ");
+            socket.send("Note; Storage is limited. Refrain from making Private Rooms if you don't have to. Report any bugs to the admins at 'Feedback' (The private room) or directly message me. Contact info at 'contact' (The private room). Have a good day");
             firstmessage = false;
         }
 
-        //==================== HANDLE EMPTY MESSAGE ==========================
-        if(text === ""){
-          return;
-        }
+        
 
         // ===================== NAME CHANGE HANDLER =====================
 
         if (user.newName) {
+            
             const newMoniker = text?.trim();
+            if(userarray.includes(newMoniker)){
+              socket.send("Duplicate Users are disabled... For now...");
+              return;
+            }
+            if(newMoniker == ""){
+              socket.send("No Blank Monikers Allowed!");
+              return;
+            }
 
             if (!newMoniker || !ValidateName(newMoniker)) {
                 socket.send("Invalid Moniker.");
@@ -777,15 +860,15 @@ server.on("connection", async (socket,req) => {
                 if (data.type === "regmeta" || data.type === "imgmeta") {
                   socket.send(JSON.stringify(data));
                   
-                  const file = await downloadFromMega(data.id);
+                  const file = await safeDownloadMega(data.id);
                   console.log("image in room " + newPrTag + " loaded: " + data.name);
                   socket.send(file, { binary: true });
                 } else {
-                  socket.send(line);
+                  socket.send(JSON.stringify(line));
                 }
               }
               else{
-                socket.send(line);
+                socket.send(JSON.stringify(line));
               }
             } catch (e) {
               console.error("Error sending MEGA file:", e);
@@ -843,6 +926,8 @@ server.on("connection", async (socket,req) => {
       // ===================== LOGIN =====================
 
       if (data && data.type === "login") {
+        let logindataunsent = true;
+        let tokenb = true;
         try {
             socket.send("Processing login...");
 
@@ -878,14 +963,16 @@ server.on("connection", async (socket,req) => {
               user.mod = false;
               user.loggedIn = true;
               socket.send("New account created and logged in as " + userin);
-              
-              db.ref("logindata/accountdata/").push({
-                user: userin, 
-                pass: passin,   
-                disp: userin,
-                admin: false,
-                mod: false
-              });
+              if(logindataunsent){
+                db.ref("logindata/accountdata/").push({
+                  user: userin, 
+                  pass: passin,   
+                  disp: userin,
+                  admin: false,
+                  mod: false
+                });
+                logindataunsent = false;
+              }
               return;
             }
             if (!acc) {
@@ -908,6 +995,7 @@ server.on("connection", async (socket,req) => {
             const token = require("crypto").randomBytes(16).toString("hex");
 
             socket.send("Token created!");
+            if(tokenb){
             db.ref("sessions/" + token).set({
               username: acc.user,
               pass: acc.pass,
@@ -915,6 +1003,8 @@ server.on("connection", async (socket,req) => {
               mod: acc.mod,
               disp: acc.disp
             });
+            tokenb = false;
+            }
             user.sessionToken = token;
             socket.send(JSON.stringify({type: "sessionToken", tokenid: token}));
           
@@ -947,7 +1037,7 @@ server.on("connection", async (socket,req) => {
 
         if (text == "/strikemsg") {
           console.log("Striked 1");
-          const removed = history[user.prtag].pop();
+          const removed = JSON.parse(history[user.prtag].pop());
           let taggedMessage = JSON.stringify({ type: "strikemsg" });
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
@@ -960,7 +1050,7 @@ server.on("connection", async (socket,req) => {
               .once("value", snapshot => {
                   snapshot.forEach(child => child.ref.remove());
               });
-          const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
+          const file = megaDB.files[removed.id];
           if(!file){
             console.log("Invalid node id");
             return;
@@ -980,20 +1070,27 @@ server.on("connection", async (socket,req) => {
         // ===================== HANDLE BAN TARGET ==========================
 
         if (user.awaitingBanTarget == true) {
+          let found = 0;
           clients.forEach((cUser, client) => {
             if (cUser.moniker === text) {
-              if (client._socket && client._socket.remoteAddress) {
-                const ip = client._socket.remoteAddress;
-                if (!bannedIPs.has(text)) {
-                  bannedIPs.set(cUser.moniker, ip);
-                }
+              if (client._socket && ip) {
+                
+                
+                bannedIPs.set(cUser.moniker, ip);
+                
               }
               client.send("You have been banned by " + user.moniker);
               client.close();
-              socket.send("User " + user.awaitingBanTarget + " has been banned.");
+              socket.send("User " + cUser.moniker + " has been banned.");
+              found++;
               user.awaitingBanTarget = false;
             }
+            
           });
+          if(found === 0){
+              socket.send("User Not Found!!");
+              user.awaitingBanTarget = false;
+          }
           return;
         } // I didn't do anything?
 
@@ -1053,7 +1150,7 @@ server.on("connection", async (socket,req) => {
               if(isJson(line)){
                 const data = JSON.parse(line.toString());
                 if(data.type === "regmeta" || data.type === "imgmeta"){
-                  const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(line).id);
+                  const file = megaDB.files[data.id];
                     if(!file){
                       console.log("Invalid node id");
                       continue;
@@ -1111,7 +1208,7 @@ server.on("connection", async (socket,req) => {
 
         if (text == "/delroom" && user.admin) {
 
-          if (user.prtag == "main") {
+          if (user.prtag == "main2") {
 
             socket.send("Room 'main' cannot be removed");
             return;
@@ -1119,17 +1216,17 @@ server.on("connection", async (socket,req) => {
           } else {
 
               let previoustag = user.prtag;
-              user.prtag = "main";
+              user.prtag = "main2";
 
               socket.send(JSON.stringify({ type: "clearHistory" }));
 
-              for (const line of history["main"]) {
+              for (const line of history["main2"]) {
                   socket.send(line);
               }
 
               for (const [client, cUser] of clients) {
                   if (cUser.prtag == previoustag) {
-                      cUser.prtag = "main";
+                      cUser.prtag = "main2";
                   }
               }
   
@@ -1260,7 +1357,7 @@ server.on("connection", async (socket,req) => {
 
       // ===================== NORMAL CHAT =====================
 
-      const timestamp = new Date().toLocaleTimeString("en-US", {
+      let timestamp = new Date().toLocaleTimeString("en-US", {
         timeZone: "America/Chicago",
         hour12: true
       });
@@ -1289,12 +1386,12 @@ server.on("connection", async (socket,req) => {
       }
       //socket.send("Message Generating");
 
+      let taggedMessage = JSON.stringify({
+                        message: taggedString,
+                        prtag: user.prtag,
+                        datatype: "chat"
+                      });
       
-      const taggedMessage = JSON.stringify({
-        message: taggedString,
-        prtag: user.prtag,
-        datatype: "chat"
-      });
      // socket.send("Message Generated");
       //socket.send("Sending to history...");
       history[user.prtag].push(taggedMessage);
@@ -1302,7 +1399,7 @@ server.on("connection", async (socket,req) => {
       if (history[user.prtag].length > 350) {
         let removed = history[user.prtag].shift();
         if(isJson(removed)){
-          const file = megaDB.root.children.find(n => n.nodeId === JSON.parse(removed).id);
+          const file = megaDB.files[JSON.parse(removed).id];
           if(!file){
             console.log("Invalid node id");
             return;

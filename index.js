@@ -76,6 +76,7 @@ async function reconnectMega() {
 }
 async function safeDownloadMega(id){
   try{
+    console.log("Attempting to download from MEGA with id: " + id);
     return await downloadFromMega(id);
   } catch (err){
     console.error("MEGA DOWNLOAD ERROR THROWN FROM SAFEUPLOADMEGA(): " + err);
@@ -364,14 +365,14 @@ async function ensureFolder(fold) {
 
 async function downloadFromMega(nodeId) {
   const filedb = megaDB;
-  console.log("Mega init from down");
+  console.log("Mega Initialized in downloadFromMega");
   try{
     const file = filedb.files[nodeId];
     console.log("file found");
   }catch(err){
     console.error("File Location Failed: " + err);
   }
-  if (!file) throw new Error("File not found");
+  if (!file) throw new Error("File not found: ", nodeId);
 
   return await new Promise((resolve, reject) => {
     const chunks = [];
@@ -848,36 +849,7 @@ server.on("connection", async (socket,req) => {
         //======================== CHANGE PRIVATE ROOM ======================
         if(data && data.type === "changePrTag"){
           const newPrTag = data.v1;
-          if (!ValidateName(newPrTag)) {
-            socket.send("Invalid private room name.");
-            return;
-          }
-          
-          await ensureRoom(newPrTag, user, socket);
-          
-          user.prtag = newPrTag;
-
-          for(const line of history[newPrTag]){
-            try {
-              if (isJson(line)) {
-                const data = JSON.parse(line.toString());
-                if (data.type === "regmeta" || data.type === "imgmeta") {
-                  socket.send(JSON.stringify(data));
-                  
-                  const file = await safeDownloadMega(data.id);
-                  console.log("image in room " + newPrTag + " loaded: " + data.name);
-                  socket.send(file, { binary: true });
-                } else {
-                  socket.send(JSON.stringify(line));
-                }
-              }
-              else{
-                socket.send(JSON.stringify(line));
-              }
-            } catch (e) {
-              console.error("Error sending MEGA file:", e);
-            }
-          }
+          await changePrTag(newPrTag, clients.get(socket), socket);
           return;
         }
 

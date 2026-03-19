@@ -109,11 +109,10 @@ async function changePrTag(tag, user, socket){
             console.log("image in room " + newPrTag + " loaded: " + data.name);
             socket.send(file, { binary: true });
           } else {
-            socket.send(line.taggedMessage);
+            socket.send(line.toString());
           }
-        }
-        else{
-          socket.send(line.taggedMessage);
+        } else {
+          console.log("NON-JSON message found in history. Data Contamination possible.");
         }
       } catch (e) {
         console.error("Error sending MEGA file:", e);
@@ -411,6 +410,41 @@ class Account{
   }
 }
 
+const PollArray = new Map();
+const VoteArray = new Map();
+
+class Poll{
+  constructor(question, optionMap, timer){
+    this.question = question;
+    this.optionMap = optionMap;
+    this.timer = timer;
+    this.msgid = require("crypto").randomBytes(16).toString("hex");
+    PollArray.set(this.msgid, toJSON(this));
+    this.avail = false;
+  }
+  addVote(opnum){
+    if(this.avail){
+      this.optionMap.get(opnum).optionvotes++;
+    }
+  }
+  changeVote(originalnum, finalnum){
+    if(this.avail){
+      optionMap.get(originalnum).optionvotes--;
+      optionMap.get(finalnum).optionvotes++;
+    }
+  }
+  go(){
+    this.avail = true;
+    setTimeout(()=>{
+      this.timer--;
+      db.ref("chatlogs/Polls/"+this.msgid).update(this);
+      if(this.timer ==0){
+        this,avail = true;
+      }
+    }, 3600000)
+  }
+}
+
 let aclist = [];
 
 
@@ -505,17 +539,34 @@ async function loadAccounts(db){
   }
 }
 //^Loads login data
-function ensureAccount(user, pass){
-  if (!ValidateName(user)) return false;
-  if(loginfo[user]){
-    return false;
-  } else{
-    const a = new Account(user, pass, false, false, user);
-    loginfo[user]= pass;
-    encodeLoginData(a, db);
-    return true;
+function toJSON(value) {
+  if (value === null || typeof value !== "object") {
+    return value;
   }
+
+  if (Array.isArray(value)) {
+    return value.map(v => toJSON(v));
+  }
+
+  if (value instanceof Map) {
+    return Object.fromEntries(
+      [...value.entries()].map(([k, v]) => [k, toJSON(v)])
+    );
+  }
+
+  if (value instanceof Set) {
+    return [...value].map(v => toJSON(v));
+  }
+
+  const obj = {};
+  for (const key in value) {
+    if (typeof value[key] !== "function") {
+      obj[key] = toJSON(value[key]);
+    }
+  }
+  return obj;
 }
+
 
 
 
@@ -524,6 +575,7 @@ for(const keys of loginfo.keys()){
   userarray.push(keys);
 }
 console.log("User Array Filled");
+
 
 
 //======================================================================================================
@@ -777,8 +829,58 @@ server.on("connection", async (socket,req) => {
         }
 
         
+        // =============================Poll Handling ======================
+        if(data&& data.type == "PollCreate"){
+          const optionMap = new Map();
+          const title = data.v1;
+          const options = data.v2;
+          const timer = data.v3;
+          let i = 1;
+          for(const op of options){
+            optionMap.set(i, {
+              optionname:op,
+              optionvotes:0
+            });
+            i++;
+          }
 
+          const poll = new Poll(title, optionMap, timer);
+          poll.go();
+          db.ref("chatlog/polls/"+poll.msgid).set(toJSON(poll));
+          for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+              client.send(JSON.stringify({
+                type: "Poll",
+                polldata: toJSON(poll)
+              }));
+            }
+          }
+        }
+
+        //============================Vote Handling=========================
+        if(data && data.type === "PollVote"){
+          const vote = data.v1;
+          const pollid = data.v2;
+          if(!PollArray.get(pollid)){console.log("Error," + pollid + "Not found"); return;}
+          const pollgot = PollArray.get(pollid);
+          const voteRecord = VoteArray.get(pollid);
+          const hasVoted = voteRecord && voteRecord.user === user.username;
+
+          if(hasVoted){
+            let origvote = VoteArray.get(pollid).option;
+            pollgot.changeVote(origvote, vote);
+          } else{
+            pollgot.addVote(vote);
+            VoteArray.set(pollid,{
+              user:user.username,
+              option:vote
+            });
+          }
+          db.ref("chatlog/polls/" + pollid).update(toJSON(pollgot));
+
+        }
         // ===================== NAME CHANGE HANDLER =====================
+        
 
         if (user.newName) {
             
@@ -1365,13 +1467,12 @@ server.on("connection", async (socket,req) => {
       //socket.send("Message Generating");
 
       let taggedMessage = JSON.stringify({
-                        message: taggedString,
-                        prtag: user.prtag,
-                        datatype: "chat"
-                      });
+        message: taggedString,
+        prtag: user.prtag,
+        datatype: "chat"
+      });
       
-     // socket.send("Message Generated");
-      //socket.send("Sending to history...");
+     
       history[user.prtag].push(taggedMessage);
 
       if (history[user.prtag].length > 350) {
@@ -1386,17 +1487,13 @@ server.on("connection", async (socket,req) => {
           
         }
       }
-      //socket.send("History trimmed");
 
       db.ref("chatlog/" + user.prtag).push({ taggedMessage });
-      //socket.send("Message being broadcasted");
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
             client.send(taggedMessage);
         }
       }
-
-      //socket.send("Mesage broadcasted!");
       return;
     
     });

@@ -112,7 +112,7 @@ async function changePrTag(tag, user, socket){
             socket.send(line.toString());
           }
         } else {
-          console.log("NON-JSON message found in history. Data Contamination possible.");
+          console.log("NON-JSON message found in history. Data Contamination possible. Room: " + newPrTag);
         }
       } catch (e) {
         console.error("Error sending MEGA file:", e);

@@ -737,15 +737,7 @@ server.on("connection", async (socket,req) => {
                     
                       
                     }
-                    if(!filesent){
-               
-                    console.log("SENT META TO CLIENTS: " + dat);
-                    console.log("SENT FILES TO CLIENTS");
-                
-                    fs.writeFileSync("server_sent.bin", filebuff);
-                    console.log("Wrote raw binary to server_sent.bin");
-
-                      const timestamp = new Date().toLocaleTimeString("en-US", {
+                    const timestamp = new Date().toLocaleTimeString("en-US", {
                         timeZone: "America/Chicago",
                         hour12: true
                       });
@@ -759,7 +751,15 @@ server.on("connection", async (socket,req) => {
                     
                       console.log("Flavor Text Sent!");
                       client.send(dat);
+                      console.log("SENT META TO CLIENTS: " + dat);
                       client.send(filebuff, { binary: true });
+                      console.log("SENT FILES TO CLIENTS");
+                    if(!filesent){
+                
+                    fs.writeFileSync("server_sent.bin", filebuff);
+                    console.log("Wrote raw binary to server_sent.bin");
+
+                      
 
                       
                     history[user.prtag].push(taggedMessage);
@@ -1135,7 +1135,7 @@ server.on("connection", async (socket,req) => {
             console.log("Invalid node id");
             return;
           }
-          await file.delete(permament);
+          await file.delete();
           console.log("Message removed from memory.");
           socket.send("Message Removed.");
           return;

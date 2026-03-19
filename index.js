@@ -836,6 +836,8 @@ server.on("connection", async (socket,req) => {
           const options = data.v2;
           const timer = data.v3;
           let i = 1;
+          let tode = true;
+          let bode = true;
           for(const op of options){
             optionMap.set(i, {
               optionname:op,
@@ -846,7 +848,12 @@ server.on("connection", async (socket,req) => {
 
           const poll = new Poll(title, optionMap, timer);
           poll.go();
+
+          if(tode){
           db.ref("chatlog/polls/"+poll.msgid).set(toJSON(poll));
+          tode = false;
+          }
+          while(bode){
           for (const [client, cUser] of clients) {
             if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
               client.send(JSON.stringify({
@@ -854,6 +861,8 @@ server.on("connection", async (socket,req) => {
                 polldata: toJSON(poll)
               }));
             }
+          }
+          bode = false;
           }
         }
 
@@ -865,6 +874,7 @@ server.on("connection", async (socket,req) => {
           const pollgot = PollArray.get(pollid);
           const voteRecord = VoteArray.get(pollid);
           const hasVoted = voteRecord && voteRecord.user === user.username;
+          let tode = true;
 
           if(hasVoted){
             let origvote = VoteArray.get(pollid).option;
@@ -876,7 +886,10 @@ server.on("connection", async (socket,req) => {
               option:vote
             });
           }
+          if(tode){
           db.ref("chatlog/polls/" + pollid).update(toJSON(pollgot));
+          tode = false;
+          }
 
         }
         // ===================== NAME CHANGE HANDLER =====================

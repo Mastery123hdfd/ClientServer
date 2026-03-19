@@ -64,11 +64,6 @@ setInterval(() => {
 
 let root;
 
-
-
-
-
-
 //Mega Safety Settings:
 async function reconnectMega() {
    console.log("Reinitializing MEGA..."); 
@@ -113,6 +108,7 @@ async function changePrTag(tag, user, socket){
           }
         } else {
           console.log("NON-JSON message found in history. Data Contamination possible. Room: " + newPrTag);
+          socket.send(line);
         }
       } catch (e) {
         console.error("Error sending MEGA file:", e);

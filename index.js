@@ -105,7 +105,7 @@ async function changePrTag(tag, user, socket){
             socket.send(file, { binary: true });
           } else {
             console.log(typeof line);
-            socket.send(JSON.strsingify(line));
+            socket.send(JSON.stringify(line));
           }
         } else {
           console.log("NON-JSON message found in history. Data Contamination possible. Room: " + newPrTag);

@@ -248,8 +248,8 @@ function loadFromFirebase(db){
 }
 function isJson(text){
 
-
-  if (text.startsWith("{")) {
+  const raw = text.toString();
+  if (raw.startsWith("{")) {
       try {
           data = JSON.parse(raw);
       } catch (e) {

@@ -95,7 +95,7 @@ async function changePrTag(tag, user, socket){
     for(const line of history[newPrTag]){
       try {
         if (isJson(line)) {
-          const data = JSON.parse(line.toString());
+          const data = JSON.parse(line);
           if ((data.type === "regmeta" || data.type === "imgmeta") && data.id) {
             socket.send(JSON.stringify(data));
             console.log("Attempting to load image in room " + newPrTag + " with id: " + data.id);
@@ -104,10 +104,12 @@ async function changePrTag(tag, user, socket){
             console.log("image in room " + newPrTag + " loaded: " + data.name);
             socket.send(file, { binary: true });
           } else {
-            socket.send(line.toString());
+            console.log(typeof line);
+            socket.send(line);
           }
         } else {
           console.log("NON-JSON message found in history. Data Contamination possible. Room: " + newPrTag);
+          console.log(typeof line);
           socket.send(line);
         }
       } catch (e) {
@@ -245,18 +247,16 @@ function loadFromFirebase(db){
   }
 }
 function isJson(text){
-  let data = null;
-  let raw = text.toString();
 
-  if (raw.startsWith("{")) {
+
+  if (text.startsWith("{")) {
       try {
           data = JSON.parse(raw);
       } catch (e) {
-          console.log("Invalid JSON from client:", raw);
         return false;
       }
       return true;
-    }
+  }
   return false;
 }
 
@@ -313,6 +313,7 @@ async function ensureRoom(tag, user, socket) {
 
 
 const sharp = require('sharp');
+const { type } = require("os");
 function compressImage(buffer, mimeType) {
   const image = sharp(buffer);
 
@@ -404,6 +405,10 @@ class Account{
   getuser(){
     return this.user;
   }
+}
+
+function randomTag(){
+  return require("crypto").randomBytes(16).toString("hex");
 }
 
 const PollArray = new Map();
@@ -713,7 +718,7 @@ server.on("connection", async (socket,req) => {
                         name: meta.name,
                         size: meta.size,
                         mimetype: meta.type,
-                        id: id
+                        id: id,
                       }));
                   //Compression removed for now, was causing some weird bugs and the performance hit isn't worth it for the small files we're dealing with, but will be re-added in the future with better error handling and support for more formats
                       
@@ -725,7 +730,7 @@ server.on("connection", async (socket,req) => {
                         name: meta.name,
                         size: meta.size,
                         mimetype: meta.type,
-                        id: id
+                        id: id,
                       }));
 
                       fs.writeFileSync("upload.bin", filebuff);
@@ -741,7 +746,8 @@ server.on("connection", async (socket,req) => {
                        taggedMessage = JSON.stringify({
                         message: taggedString,
                         prtag: user.prtag,
-                        datatype: "chat"
+                        datatype: "chat",
+                        msgid: randomTag()
                       });
                       client.send(taggedMessage);
                     
@@ -761,8 +767,8 @@ server.on("connection", async (socket,req) => {
                     history[user.prtag].push(taggedMessage);
                     history[user.prtag].push(dat);
                     
-                      db.ref("chatlog/" + user.prtag).push({dat});
-                      db.ref("chatlog/" + user.prtag).push({taggedMessage});
+                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set({taggedMessage});
+                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set({dat});
                       filesent =true;
                       console.log("filesent is now true");
                     }
@@ -1478,7 +1484,8 @@ server.on("connection", async (socket,req) => {
       let taggedMessage = JSON.stringify({
         message: taggedString,
         prtag: user.prtag,
-        datatype: "chat"
+        datatype: "chat",
+        msgid: randomTag()
       });
       
      
@@ -1497,7 +1504,7 @@ server.on("connection", async (socket,req) => {
         }
       }
 
-      db.ref("chatlog/" + user.prtag).push({ taggedMessage });
+      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set({ taggedMessage });
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
             client.send(taggedMessage);

@@ -105,12 +105,12 @@ async function changePrTag(tag, user, socket){
             socket.send(file, { binary: true });
           } else {
             console.log(typeof line);
-            socket.send(line);
+            socket.send(JSON.strsingify(line));
           }
         } else {
           console.log("NON-JSON message found in history. Data Contamination possible. Room: " + newPrTag);
           console.log(typeof line);
-          socket.send(line);
+          socket.send(JSON.stringify(line));
         }
       } catch (e) {
         console.error("Error sending MEGA file:", e);

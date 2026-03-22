@@ -107,20 +107,25 @@ async function changePrTag(tag, user, socket){
             const file = await safeDownloadMega(data.id);
             console.log("image in room " + newPrTag + " loaded: " + data.name);
             socket.send(file, { binary: true });
-          } else {
-            console.log(typeof line);
-            socket.send(JSON.stringify(line));
           }
-          if(data.type === "POLLREF"){
+          else if(data.type === "POLLREF"){
             if(PollArray.has(data.pollid)){
               sendPoll(PollArray.get(pollid));
             } else{
               console.log("Invalid Poll Reference located at room " + newPrTag);
             }
           }
+          else{
+            if (data.datatype == "chat"){
+              socket.send(line);
+            } else{
+              console.log("Wierd JSON located: " + JSON.stringify(line));
+              socket.send(JSON.stringify(line));
+            }
+          }
         } else {
           console.log("NON-JSON message found in history. Data Contamination possible. Room: " + newPrTag);
-          console.log(typeof line);
+          console.log("Type: " + typeof line);
           socket.send(JSON.stringify(line));
         }
       } catch (e) {

@@ -110,7 +110,10 @@ async function changePrTag(tag, user, socket){
           }
           else if(data.type === "POLLREF"){
             if(PollArray.has(data.pollid)){
-              sendPoll(PollArray.get(pollid));
+              socket.send(JSON.stringify({
+                type: "Poll",
+                polldata: toJSON(poll)
+              }));
             } else{
               console.log("Invalid Poll Reference located at room " + newPrTag);
             }
@@ -163,15 +166,6 @@ const httpServer = http.createServer((req, res) => {
     res.end("Server is running");
 });
 
-function sendPoll(data){
-  console.log("Poll Data Being Downloaded");
-  socket.send(JSON.stringify({
-    message: "Poll loaded:" + data.question,
-    prtag: user.prtag,
-    datatype: "chat",
-    msgid: randomTag()
-  }));
-}
 
 // Attach WebSocket server to the SAME HTTP server
 const server = new WebSocket.Server({ server: httpServer });
@@ -275,6 +269,19 @@ function loadFromFirebase(db){
         }); 
       console.log("History loaded from Firebase"); 
     });
+    //Misc Loading
+    db.ref("misc/VoteArray").once("value", snap => {
+      const data = snap.val();
+      if (!data) return;
+
+      // Rebuild your Map
+      for (const pollid in data) {
+          VoteArray.set(pollid, data[pollid]);
+      }
+
+      console.log("VoteArray loaded:", VoteArray);
+    });
+
   } catch(err){
     console.error("Error loading history from Firebase:", err);
   }
@@ -473,9 +480,9 @@ class Poll{
       this.timer--;
       db.ref("chatlogs/Polls/"+this.msgid).update(this);
       if(this.timer ==0){
-        this,avail = true;
+        this.avail = false;
       }
-    }, 3600000)
+    }, 60000)
   }
 }
 
@@ -870,6 +877,7 @@ server.on("connection", async (socket,req) => {
           let i = 1;
           let tode = true;
           let bode = true;
+          let rode = true;
           for(const op of options){
             optionMap.set(i, {
               optionname:op,
@@ -901,6 +909,10 @@ server.on("connection", async (socket,req) => {
           }
           bode = false;
           }
+          if(rode){
+            db.ref("misc/VoteArray").set(toJSON(VoteArray));
+            rode = false;
+          }
         }
 
         //============================Vote Handling=========================
@@ -912,9 +924,10 @@ server.on("connection", async (socket,req) => {
           const voteRecord = VoteArray.get(pollid);
           const hasVoted = voteRecord && voteRecord.user === user.username;
           let tode = true;
+          let rode = true;
 
           if(hasVoted){
-            let origvote = VoteArray.get(pollid).option;
+            let origvote = voteRecord.option;
             pollgot.changeVote(origvote, vote);
           } else{
             pollgot.addVote(vote);
@@ -926,6 +939,18 @@ server.on("connection", async (socket,req) => {
           if(tode){
           db.ref("chatlog/polls/" + pollid).update(toJSON(pollgot));
           tode = false;
+          }
+          for (const [client, cUser] of clients) {
+            if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
+              client.send(JSON.stringify({
+                type: "Poll",
+                polldata: toJSON(poll)
+              }));
+            }
+          }
+          if(rode){
+            db.ref("misc/VoteArray").set(toJSON(VoteArray));
+            rode = false;
           }
 
         }

@@ -767,8 +767,8 @@ server.on("connection", async (socket,req) => {
                     history[user.prtag].push(taggedMessage);
                     history[user.prtag].push(dat);
                     
-                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set({taggedMessage});
-                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set({dat});
+                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set(taggedMessage);
+                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set(dat);
                       filesent =true;
                       console.log("filesent is now true");
                     }
@@ -1504,7 +1504,7 @@ server.on("connection", async (socket,req) => {
         }
       }
 
-      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set({ taggedMessage });
+      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set(taggedMessage);
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
             client.send(taggedMessage);

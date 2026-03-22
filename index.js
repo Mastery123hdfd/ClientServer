@@ -40,7 +40,7 @@ async function initMega(){
     setTimeout(initMega, 3000);
   }
 }
-
+const PollArray = new Map();
 process.on("uncaughtException", err => {
   console.error("UNCAUGHT EXCEPTION:", err);
 });
@@ -86,8 +86,12 @@ async function changePrTag(tag, user, socket){
   const newPrTag = tag;
     if (!ValidateName(newPrTag)) {
       socket.send("Invalid private room name.");
-       return;
-      } 
+      return;
+    }
+    if(tag == "Polls"){
+      socket.send("You can't enter 'Polls' for some reason... Maybe try not entering?");
+      return;
+    } 
     await ensureRoom(newPrTag, user, socket);
           
     user.prtag = newPrTag;
@@ -106,6 +110,13 @@ async function changePrTag(tag, user, socket){
           } else {
             console.log(typeof line);
             socket.send(JSON.stringify(line));
+          }
+          if(data.type === "POLLREF"){
+            if(PollArray.has(data.pollid)){
+              sendPoll(PollArray.get(pollid));
+            } else{
+              console.log("Invalid Poll Reference located at room " + newPrTag);
+            }
           }
         } else {
           console.log("NON-JSON message found in history. Data Contamination possible. Room: " + newPrTag);
@@ -146,6 +157,16 @@ const httpServer = http.createServer((req, res) => {
     res.writeHead(200);
     res.end("Server is running");
 });
+
+function sendPoll(data){
+  console.log("Poll Data Being Downloaded");
+  socket.send(JSON.stringify({
+    message: "Poll loaded:" + data.question,
+    prtag: user.prtag,
+    datatype: "chat",
+    msgid: randomTag()
+  }));
+}
 
 // Attach WebSocket server to the SAME HTTP server
 const server = new WebSocket.Server({ server: httpServer });
@@ -210,6 +231,13 @@ function loadFromFirebase(db){
     db.ref("chatlog").once("value", snapshot => {
      snapshot.forEach(roomSnap => {
          const room = roomSnap.key;
+         if(room === "Polls"){
+          roomSnap.forEach(msgSnap => {
+            const entry = msgSnap.val();
+            const pollid = entry.msgid;
+            PollArray.set(pollid, entry);
+          });
+         }
           history[room] = [];
           roomSnap.forEach(msgSnap => {
              const entry = msgSnap.val();
@@ -411,7 +439,7 @@ function randomTag(){
   return require("crypto").randomBytes(16).toString("hex");
 }
 
-const PollArray = new Map();
+
 const VoteArray = new Map();
 
 class Poll{
@@ -760,21 +788,18 @@ server.on("connection", async (socket,req) => {
                 
                     fs.writeFileSync("server_sent.bin", filebuff);
                     console.log("Wrote raw binary to server_sent.bin");
-
-                      
-
                       
                     history[user.prtag].push(taggedMessage);
                     history[user.prtag].push(dat);
                     
-                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set(taggedMessage);
-                      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set(dat);
+                      db.ref("chatlog/" + user.prtag).push(taggedMessage)
+                      db.ref("chatlog/" + user.prtag).push(dat);
                       filesent =true;
                       console.log("filesent is now true");
                     }
                     
                   sent = true; 
-                  console.log("sent is now true");
+                  console.log("This line has been tripped. It should only happen once. Its a wierd thing get used to it");
                 }
               }
             }
@@ -850,9 +875,14 @@ server.on("connection", async (socket,req) => {
 
           const poll = new Poll(title, optionMap, timer);
           poll.go();
-
+          const pollref = JSON.stringify({
+            type: "POLLREF",
+            pollid:poll.msgid
+            
+          });
           if(tode){
           db.ref("chatlog/polls/"+poll.msgid).set(toJSON(poll));
+          db.ref("chatlogs/"+user.prtag).push(pollref);
           tode = false;
           }
           while(bode){
@@ -1504,7 +1534,7 @@ server.on("connection", async (socket,req) => {
         }
       }
 
-      db.ref("chatlog/" + user.prtag + "/" + JSON.parse(taggedMessage).msgid).set(taggedMessage);
+      db.ref("chatlog/" + user.prtag).push(taggedMessage);
       for (const [client, cUser] of clients) {
         if (client.readyState === WebSocket.OPEN && cUser.prtag === user.prtag) {
             client.send(taggedMessage);

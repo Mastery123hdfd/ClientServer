@@ -49,6 +49,43 @@ process.on("unhandledRejection", err => {
   console.error("UNHANDLED REJECTION:", err);
 });
 
+const commandTable = new Map();
+commandTable.set("/createAccount", {
+  PERM:20,
+  run(ctx) {
+    logindataunsent = true;
+  
+    if(!ValidateName(ctx.newuser)){
+      return "Invalid username.";
+    }
+    if(!ValidateName(ctx.newpass)){
+      return "Invalid password.";
+    }
+    if(loginfo.has(ctx.newuser)){
+      return "Username already exists.";
+    }
+    
+    acc = new Account(ctx.newuser, ctx.newpass, false, false, ctx.newuser);
+    user.username = ctx.newuser;
+    user.pass = ctx.newpass;
+    user.moniker = ctx.newuser;
+    user.admin = false;
+    user.mod = false;
+    user.loggedIn = true;
+    socket.send("New account created and logged in as " + ctx.newuser);
+    if(logindataunsent){
+      db.ref("logindata/accountdata/").push({
+        user: ctx.newuser, 
+        pass: ctx.newpass,   
+        disp: ctx.newuser,
+        admin: false,
+        mod: false
+      });
+      logindataunsent = false;
+    }
+    return;    
+  }
+});
 let last = Date.now();
 
 setInterval(() => {
@@ -80,6 +117,11 @@ async function safeDownloadMega(id){
   }
 }
 
+const PERMTABLE = {
+  USER:0,
+  MOD: 10,
+  ADMIN: 100
+}
 
 
 async function changePrTag(tag, user, socket){
@@ -351,9 +393,25 @@ async function ensureRoom(tag, user, socket) {
   return true;
 }
 
+function handleCommand(cmd, ctx) {
+    const entry = commandTable.get(cmd);
+
+    if (!entry) {
+        ctx.reply("Unknown command.");
+        return;
+    }
+
+    if (ctx.user.perm < entry.perm) {
+        ctx.reply("You do not have permission to use this command.");
+        return;
+    }
+
+    entry.run(ctx);
+}
 
 const sharp = require('sharp');
 const { type } = require("os");
+const { isBuffer } = require("util");
 function compressImage(buffer, mimeType) {
   const image = sharp(buffer);
 
@@ -646,7 +704,7 @@ server.on("connection", async (socket,req) => {
       }
     }
     
-
+    let useractive = false;
     
  // Decode login info from Account Info
     clients.set(socket, {
@@ -661,7 +719,7 @@ server.on("connection", async (socket,req) => {
       sessionToken: null
     });
     let meta = null;
-    await changePrTag("main", clients.get(socket), socket);
+    //await changePrTag("main", clients.get(socket), socket);
     const user = clients.get(socket);
     await ensureRoom(user.prtag, user, socket);
     let received = 0;
@@ -677,7 +735,10 @@ server.on("connection", async (socket,req) => {
   //==================================================Message Handler==================================================
   //===================================================================================================================
   //===================================================================================================================
-
+    if(!useractive){
+      socket.send("Please Log In!");
+      return;
+    }
 
     socket.on("message", async (msg, isBinary) => {
       if(!isBinary){
@@ -915,6 +976,47 @@ server.on("connection", async (socket,req) => {
           }
         }
 
+        if (message.startsWith("/")) {
+
+          // Split into command + args
+          const parts = message.split(" ");
+          const cmd = parts[0];          // "/do"
+          const args = parts.slice(1);   // ["a", "b"]
+
+          // Look up the command entry
+          const entry = commandTable.get(cmd);
+
+          // Assign permission level
+          if (user.admin) {
+            user.PERM = PERMTABLE.ADMIN;
+          } else if (user.mod) {
+            user.PERM = PERMTABLE.MOD;
+          } else {
+            user.PERM = PERMTABLE.USER;
+          }
+
+          // If command exists
+          if (entry) {
+
+          // Check permission
+          if (user.PERM >= entry.PERM) {
+
+            // Run the command
+            handleCommand(cmd, {
+                user,
+                args,
+                reply: (msg) => socket.send(msg)
+            });
+
+            } else {
+              socket.send("You do not have permission to use this command.");
+            }
+          } else {
+            socket.send("Unknown command.");
+          }
+        }
+
+
         //============================Vote Handling=========================
         if(data && data.type === "PollVote"){
           const vote = data.v1;
@@ -1109,27 +1211,7 @@ server.on("connection", async (socket,req) => {
                 }
             });
 
-            if(newaccount == 0){
-              acc = new Account(userin, passin, false, false, userin);
-              user.username = userin;
-              user.pass = passin;
-              user.moniker = userin;
-              user.admin = false;
-              user.mod = false;
-              user.loggedIn = true;
-              socket.send("New account created and logged in as " + userin);
-              if(logindataunsent){
-                db.ref("logindata/accountdata/").push({
-                  user: userin, 
-                  pass: passin,   
-                  disp: userin,
-                  admin: false,
-                  mod: false
-                });
-                logindataunsent = false;
-              }
-              return;
-            }
+            
             if (!acc) {
                 socket.send("Incorrect sign-in data");
                 return;
@@ -1141,7 +1223,11 @@ server.on("connection", async (socket,req) => {
             user.admin = acc.admin;
             user.mod = acc.mod;
             user.loggedIn = true;
-
+            useractive = true;
+            socket.send(JSON.stringify({
+              type:"clearHistoryChatless"
+            }));
+            await changePrTag("main", user, socket);
             socket.send("Login successful");
           
             // ======== Token Creation ========

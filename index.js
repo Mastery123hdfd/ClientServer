@@ -737,7 +737,37 @@ server.on("connection", async (socket,req) => {
   //===================================================================================================================
     if(!useractive){
       socket.send("Please Log In!");
-      return;
+      
+      let data = null;
+        let raw = null;
+        let text = "";
+        
+        try{
+        if(!isBinary){
+          raw = msg.toString();
+          if (raw.startsWith("{")) {
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                console.log("Invalid JSON from client:", raw);
+            }
+          }
+          text = data.msg;
+        }
+      if(text == "[object ArrayBuffer]") return;
+
+        if(text == "") return;
+
+        user.active = true;
+
+        
+      } catch(err){}
+        if(data && data.type === "login"){
+
+        } else{
+          return;
+        }
+
     }
 
     socket.on("message", async (msg, isBinary) => {

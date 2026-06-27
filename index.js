@@ -134,6 +134,17 @@ async function changePrTag(tag, user, socket){
       socket.send("You can't enter 'Polls' for some reason... Maybe try not entering?");
       return;
     } 
+    if(DMTable.has(newPrTag)){
+      let avail = false;
+      DMTable.forEach((value, key) => {
+        if (value.user1 === user.moniker || value.user2 === user.moniker) {
+          avail = true;
+        }
+      });
+      if(!avail){
+        return
+      }
+    }
     await ensureRoom(newPrTag, user, socket);
           
     user.prtag = newPrTag;
@@ -176,6 +187,9 @@ async function changePrTag(tag, user, socket){
       } catch (e) {
         console.error("Error sending MEGA file:", e);
       }
+    }
+    if(DMTable.has(newPrTag)){
+
     }
     console.log("History successfully loaded for user " + user.disp + " in room " + newPrTag);
   return;
@@ -257,6 +271,9 @@ const clients = new Map();
 // Proper history buffer
 const history = {};
 
+const DMTable = new Map();
+
+
 function ValidateName(name) {
     // Only allow alphanumeric, underscores, and hyphens
     // Prevents path traversal attempts like "../" or "..\\"
@@ -279,6 +296,7 @@ function loadFromFirebase(db){
             PollArray.set(pollid, entry);
           });
          }
+         
           history[room] = [];
           roomSnap.forEach(msgSnap => {
              const entry = msgSnap.val();
@@ -327,6 +345,7 @@ function loadFromFirebase(db){
   } catch(err){
     console.error("Error loading history from Firebase:", err);
   }
+  
 }
 function isJson(text){
 
@@ -1208,8 +1227,47 @@ server.on("connection", async (socket,req) => {
             user.sessionToken = null;
             socket.send("Logged out successfully");
             return;
+      }
+      // ===================== UserList =====================
+      if(data && data.type === "getuserlist"){
+        let userList = [];
+        for(const [client, cUser] of clients){
+          if(client.readyState === WebSocket.OPEN ){
+            userList.push(cUser.moniker);
           }
-
+        }
+        socket.send(JSON.stringify({type: "userList", users: userList}));
+        return;
+      }
+      // ===================== DM Registration =====================
+      if(data && data.type === "initDM"){
+        const targetUser = data.v1;
+        
+        let userList = [];
+        for(const [client, cUser] of clients){
+          if(client.readyState === WebSocket.OPEN){
+            userList.push(cUser.moniker);
+          }
+        }
+        if(!userList.includes(targetUser) || targetUser === user.moniker || targetUser === "UNKNOWN"){
+          socket.send("User not found.");
+          return;
+        }
+        if([...DMTable.values()].some(dm => (dm.user1 === user.moniker && dm.user2 === targetUser) || (dm.user1 === targetUser && dm.user2 === user.moniker))) {
+          socket.send("DM already exists.");
+          
+          DMTable.forEach((value, key) => {
+            if ((value.user1 === user.moniker && value.user2 === targetUser) || (value.user1 === targetUser && value.user2 === user.moniker)) {
+              changePrTag(key, user, socket);
+            }
+          });
+          return;
+        }
+        const DMKey = randomTag();
+        DMTable.set(DMKey, {user1: user.moniker, user2: targetUser});
+        await changePrTag(DMKey, user, socket);
+        history[DMKey].push(JSON.stringify({type: "DMStart", user1: user.moniker, user2: targetUser}));
+      }
       // ===================== LOGIN =====================
 
       if (data && data.type === "login") {

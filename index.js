@@ -1212,6 +1212,15 @@ server.on("connection", async (socket,req) => {
         return;
       }
 
+      // ==================== SYNCHRONIZE ====================
+
+      if (text === "/sync" && user.admin == true){
+        admin = getAdmin();
+        db = admin.database();
+        history = {};
+        loadFromFireBase(db);
+      }
+      
       // ===================== LOG OUT =====================
 
       if (text == "/logout") {
